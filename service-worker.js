@@ -1,13 +1,13 @@
 /* Offline cache for static, self-contained Nanko Adventure PWA. */
-const CACHE_NAME = 'nanko-adventure-pwa-v1';
+const CACHE_NAME = 'nanko-adventure-pwa-v2';
 const FILES = [
   './', './index.html', './style.css', './game.js',
-  './manifest.webmanifest', './icons/icon-192.png',
+  './manifest.webmanifest', './pwa.js', './assets/heroes.png', './icons/icon-192.png',
   './icons/icon-512.png', './icons/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES)));
 });
 
 self.addEventListener('activate', event => {

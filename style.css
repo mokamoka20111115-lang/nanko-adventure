@@ -10,3 +10,16 @@
 /* PWA standalone layout and iPhone safe areas. */
 @media (display-mode: standalone) { body { min-height: 100svh; } .app { padding-top: max(0px, env(safe-area-inset-top)); padding-bottom: max(12px, env(safe-area-inset-bottom)); } }
 @supports (padding: env(safe-area-inset-bottom)) { .app { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); } }
+/* One-screen portrait layout, including Safari toolbars and safe areas. */
+.app{height:100svh;height:100dvh;max-width:470px;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.topbar{height:48px;flex:0 0 48px}.icon-btn{width:42px;height:42px}
+.game-wrap{flex:1 1 auto;min-height:190px;width:100%;height:auto!important;aspect-ratio:auto;box-shadow:0 5px 0 #171638}
+canvas{object-fit:contain;background:#b5dff2}
+.controller{flex:0 0 auto;padding-top:10px}.control-header{margin-bottom:7px}.weapon{min-height:54px;display:grid;grid-template-columns:30px auto;column-gap:3px}.weapon-icon{grid-row:1/3}.weapon small{font-size:9px}.special-btn{margin-top:9px;min-height:46px;font-size:16px}.move-tip{margin:7px 0 0;font-size:9px;line-height:1.4}footer{display:none}
+.screen{padding:13px;background:linear-gradient(#5c4a9d22,#241a6caa);backdrop-filter:none}.screen-box{padding:14px 12px;max-width:320px}.mascot-pair{margin:0 auto 5px;display:block;width:150px;height:88px;border-radius:18px;object-fit:cover;filter:none}.screen-box h1{font-size:34px}.screen-box p{font-size:11px;margin:8px 0 12px}.screen-extra{font-size:10px;margin-top:10px}.eyebrow{font-size:9px}.start-btn{font-size:15px;padding:11px 8px}
+.install-tip{margin:6px 0 0;text-align:center;color:#e3d6f5;font-size:10px}.install-tip button{border:0;color:inherit;background:transparent;font-size:10px;text-decoration:underline}.install-help{position:fixed;inset:20% 8%;margin:auto;max-width:360px;height:max-content;z-index:10;background:#fff4fc;color:#503966;border:3px solid #ffb4d2;border-radius:22px;padding:22px;box-shadow:0 0 0 100vmax #16102caa}.install-help::backdrop{background:#16102caa}.install-help h2{font-size:20px}.install-help p{font-size:14px;line-height:1.8}.install-help button{width:100%;padding:12px;border-radius:12px;border:0;background:#db558a;color:white;font-weight:bold}
+@media(max-height:680px){.topbar{height:42px;flex-basis:42px}.brand{font-size:16px}.control-header,.move-tip{display:none}.weapon{min-height:46px}.special-btn{min-height:42px}.mascot-pair{width:110px;height:64px}.screen-box h1{font-size:27px}.screen-box{padding:10px}.screen-extra{margin-top:7px}.screen-box p{margin:5px 0 8px}.install-tip{font-size:9px}}
+@media(min-width:650px){.app{max-width:440px}.game-wrap{min-height:240px}}
+@media(orientation:landscape) and (max-height:500px){.app{height:auto;min-height:100dvh;max-width:410px}.game-wrap{flex:none;height:500px!important}.controller{padding-bottom:15px}}
+@media(prefers-reduced-motion:reduce){.special-btn:not(:disabled){animation:none}.toast{transition:none}}
+.game-wrap{display:flex;align-items:center;justify-content:center;background:#b5dff2}canvas{flex:none}

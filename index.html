@@ -30,7 +30,7 @@
       <div id="screen" class="screen">
         <div class="screen-box">
           <div id="screenEyebrow" class="eyebrow">NANKO & CHAKE PRESENT</div>
-          <div class="mascot-pair" aria-hidden="true"><span>👩🏻</span><span>🐥</span></div>
+          <img class="mascot-pair" src="./assets/heroes.png" alt="なんこ と ちゃけ" width="150" height="88">
           <h1 id="screenTitle">なんこの<br>大冒険！</h1>
           <p id="screenText">お金・お肉・お魚を投げまくれ！<br>ラスボス「はしもと」をやっつけよう！</p>
           <button id="mainBtn" class="start-btn">🌸 ぼうけんスタート！</button>
@@ -50,18 +50,11 @@
       <button id="specialBtn" class="special-btn" disabled><span class="special-symbol">😡</span><span id="specialLabel">むかちゅくーーー！！</span><span id="specialPercent">0%</span><span id="specialFill"></span></button>
       <p class="move-tip">📱 画面をなぞって移動・攻撃は自動 ／ 💻 矢印・WASD移動、1〜3武器変更、Zで必殺技</p>
     </section>
+    <p class="install-tip"><span id="offlineStatus" role="status">オフライン準備中…</span> · <button id="installHelpBtn">ホーム画面に追加</button></p>
+    <dialog id="installHelp" class="install-help"><h2>なんこをホーム画面に！</h2><p>iPhoneではSafariでこのページを開き、共有ボタン →「ホーム画面に追加」→「追加」を選んでね。</p><p>「オフライン準備OK」と表示されたら、電波がない場所でも遊べます。音声合成の声は端末によって異なり、使えない時も文字と効果音で楽しめます。</p><button id="closeHelp">わかった！</button></dialog>
     <footer>なんこ × ちゃけ VS はしもと <span>♡</span> ぜんぶフィクションのコミカルバトル</footer>
   </main>
   <script src="game.js"></script>
-  <script>
-    // Service workers work on HTTPS and localhost; file:// still supports online gameplay.
-    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js", { scope: "./" }).catch(err => {
-          console.warn("Offline installation unavailable:", err);
-        });
-      });
-    }
-  </script>
+  <script src="pwa.js"></script>
 </body>
 </html>
