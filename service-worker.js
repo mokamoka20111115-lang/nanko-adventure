@@ -1,7 +1,7 @@
 /* Offline cache for static, self-contained Nanko Adventure PWA. */
-const CACHE_NAME = 'nanko-adventure-pwa-v4';
+const CACHE_NAME = 'nanko-adventure-pwa-v5';
 const FILES = [
-  './', './index.html', './style.css', './game.js',
+  './', './index.html', './style.css', './game.js?v=touchfix2-20261019',
   './manifest.webmanifest', './pwa.js', './assets/heroes.png', './icons/icon-192.png',
   './icons/icon-512.png', './icons/apple-touch-icon.png'
 ];
