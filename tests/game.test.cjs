@@ -6,10 +6,10 @@ const nodes={},canvas=createCanvas(390,660),events={};
 for(const id of ['screen','screenTitle','screenText','screenEyebrow','screenExtra','mainBtn','pauseBtn','soundBtn','specialBtn','specialFill','specialPercent','toast','weaponHint'])nodes[id]=element();
 nodes.game=Object.assign(element(),{getContext:()=>canvas.getContext('2d'),parentElement:{clientWidth:390,clientHeight:660}});
 const math=Object.create(Math);math.random=()=>{randomSeed=(randomSeed*1664525+1013904223)>>>0;return randomSeed/4294967296;};
-const scope={console,Math:math,document:{getElementById:id=>nodes[id],querySelectorAll:()=>['money','meat','fish'].map(w=>({...element(),dataset:{weapon:w}})),addEventListener(){}},matchMedia:()=>({matches:false}),localStorage:{getItem(){return null},setItem(){}},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setTimeout(){},SpeechSynthesisUtterance:class{}};
+const scope={console,Math:math,document:{querySelector:()=>null,getElementById:id=>nodes[id],querySelectorAll:()=>['money','meat','fish'].map(w=>({...element(),dataset:{weapon:w}})),addEventListener(){}},matchMedia:()=>({matches:false}),localStorage:{getItem(){return null},setItem(){}},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setTimeout(){},SpeechSynthesisUtterance:class{}};
 scope.window={devicePixelRatio:1,addEventListener:(n,f)=>events[n]=f};vm.createContext(scope);
 let source=fs.readFileSync('game.js','utf8');
-source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  window.test={begin,tick,render,special,togglePause,changeWeapon,damagePlayer,spawnPickup,enemyFire,bossDefeated,
+source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  window.test={cheer:()=>({life:cheerLife,clock:cheerClock,index:cheerIndex}),begin,tick,render,special,togglePause,changeWeapon,damagePlayer,spawnPickup,enemyFire,bossDefeated,
     input:(x,y)=>{keys.clear();if(x)keys.add(x>0?'ArrowRight':'ArrowLeft');if(y)keys.add(y>0?'ArrowDown':'ArrowUp');},
     set:(v)=>{if('stage' in v)stage=v.stage;if('clock' in v)stageClock=v.clock;if('charge' in v)specials=v.charge;if('hp' in v)player.hp=v.hp;if('invuln' in v)player.invuln=v.invuln;if('bossHP' in v)boss.hp=v.bossHP;},
     frame:(dt)=>{if(scene!=='paused')tick(dt);},
@@ -17,7 +17,7 @@ source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  w
   updateButtons();\n  requestAnimationFrame(frame);`);
 vm.runInContext(source,scope);const game=scope.window.test,status=()=>scope.window.nankoStatus;
 const step=(seconds)=>{for(let i=0;i<seconds*60;i++)game.frame(1/60)};
-game.begin();step(.1);assert.equal(status().scene,'playing');assert(game.bullets().length>0);
+game.begin();assert.equal(game.cheer().life,0);step(5);assert(game.cheer().life>0);assert(game.cheer().index>=0&&game.cheer().index<3);const frozen=JSON.stringify(game.cheer());game.togglePause();step(1);assert.equal(JSON.stringify(game.cheer()),frozen);game.togglePause();game.render();game.begin();step(.1);assert.equal(status().scene,'playing');assert(game.bullets().length>0);
 game.changeWeapon('fish');step(.5);assert(game.bullets().filter(b=>b.type==='fish').length>=3);
 game.changeWeapon('meat');step(.7);assert(game.bullets().some(b=>b.damage>=43));assert(game.bullets().some(b=>b.type==='chake'));
 const old=status().stageClock;game.togglePause();step(1);assert.equal(status().stageClock,old);game.togglePause();

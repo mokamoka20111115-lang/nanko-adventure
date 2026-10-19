@@ -27,6 +27,8 @@
   };
   let scene='title', lastTime=0, elapsed=0, stage=0, stageClock=0, enemyClock=0;
   let score=0, best=0, weapon='money', power=1, specials=0, chakeClock=.35;
+  const cheers=['頑張れなんこ！','いけいけなんこ！','いっけーー！'];
+  let cheerClock=3, cheerLife=0, cheerIndex=-1;
   let player={x:W/2,y:560,hp:3,invuln:0,shot:0,tilt:0};
   let enemies=[],bullets=[],enemyBullets=[],particles=[],pickups=[],texts=[];
   let boss=null, stageBossSeen=false, stageDelay=0, effectFlash=0, quake=0, specialFX=0;
@@ -118,6 +120,7 @@
   function hideScreen(){els.screen.hidden=true;}
   function resetGame() {
     stage=0;score=0;power=1;specials=0;weapon='money';chakeClock=.35;
+    cheerClock=rand(3,5);cheerLife=0;cheerIndex=-1;
     player={x:W/2,y:550,hp:3,invuln:2,shot:0,tilt:0};
     enemies=[];bullets=[];enemyBullets=[];particles=[];pickups=[];texts=[];
     stageClock=0;enemyClock=0;stageBossSeen=false;stageDelay=0;boss=null;
@@ -260,6 +263,13 @@
       if(stageDelay<=0)nextStage();return;
     }
     if(scene!=='playing'){updateParticles(dt);return;}
+    cheerLife=Math.max(0,cheerLife-dt);
+    cheerClock-=dt;
+    if(cheerClock<=0){
+      // Choose a different encouragement each time; cosmetic only.
+      cheerIndex=(cheerIndex+1+Math.floor(Math.random()*(cheerIndex<0?3:2)))%cheers.length;
+      cheerLife=2.6;cheerClock=rand(8,13);
+    }
     stageClock+=dt;enemyClock-=dt;
     itemClock-=dt;
     if(itemClock<=0&&!boss){spawnPickup(clamp(player.x,40,W-40),220,dropCount%2?'power':'heart');dropCount++;itemClock=14;}
@@ -475,6 +485,20 @@
     line([[-9,27],[-9,32]],'#605b64',2);line([[9,27],[9,32]],'#605b64',2);
     ctx.restore();
   }
+  function drawCheer(x,y){
+    if(cheerLife<=0||scene!=='playing'||specialFX>0)return;
+    // Large, high-contrast lettering stays inside even the narrowest playfield.
+    const w=184,h=42,bx=clamp(x-w/2,8,W-w-8),by=y-96;
+    const tip=clamp(x,bx+14,bx+w-14);
+    ctx.save();ctx.globalAlpha=Math.min(1,cheerLife/.2,(2.6-cheerLife)/.15);
+    rr(bx,by+3,w,h,17,'#70465d30');
+    rr(bx,by,w,h,17,'#fffdf1','#ed9aaf',2);
+    ctx.beginPath();ctx.moveTo(tip-7,by+h-1);ctx.lineTo(x,by+h+12);ctx.lineTo(tip+7,by+h-1);
+    ctx.fillStyle='#fffdf1';ctx.fill();
+    line([[tip-7,by+h],[x,by+h+12],[tip+7,by+h]],'#ed9aaf',2);
+    label(cheers[cheerIndex],bx+w/2,by+27,20,'#75425c');
+    ctx.restore();
+  }
   function drawHashimoto(x,y,s=1){
     ctx.save();ctx.translate(x,y);ctx.scale(s,s);
     const fl=Math.sin(elapsed*4)*3;
@@ -640,6 +664,7 @@
         }
       }
     }
+    drawCheer(clamp(player.x-49,26,W-23),player.y+15);
     for(const p of particles){ctx.save();ctx.globalAlpha=clamp(p.life/.42,0,1);oval(p.x,p.y,p.r,p.r,p.color);ctx.restore();}
     for(const t of texts){ctx.save();ctx.globalAlpha=t.life;label(t.text,t.x,t.y,14,t.color,'center','#513168');ctx.restore();}
     if(effectFlash>0){ctx.fillStyle=`rgba(255,248,233,${Math.min(.45,effectFlash*.9)})`;ctx.fillRect(0,0,W,H);}
