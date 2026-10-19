@@ -660,7 +660,50 @@
   els.main.addEventListener('click',()=>{
     if(scene==='paused')togglePause();else begin();
   });
-  els.pause.addEventListener('click',togglePause);
+  // Prevent ghost pause taps after iPhone swipe gestures. Touch users must
+  // deliberately hold the top pause button (0.75 s); desktop keeps single-click.
+  els.pause.addEventListener('click',e=>{
+    if(!hasTouch)togglePause();
+    else e.preventDefault();
+  });
+  if(hasTouch){
+    let pauseHold=null;
+    const cancelPauseHold=()=>{
+      if(pauseHold){clearTimeout(pauseHold.timer);pauseHold=null;}
+    };
+    els.pause.addEventListener('pointerdown',e=>{
+      if(e.pointerType!=='touch')return;
+      cancelPauseHold();
+      const hold={id:e.pointerId,x:e.clientX,y:e.clientY,timer:null};
+      hold.timer=setTimeout(()=>{
+        if(pauseHold!==hold)return;
+        pauseHold=null;
+        togglePause();
+      },750);
+      pauseHold=hold;
+    });
+    els.pause.addEventListener('pointermove',e=>{
+      if(pauseHold&&pauseHold.id===e.pointerId&&Math.hypot(e.clientX-pauseHold.x,e.clientY-pauseHold.y)>12)
+        cancelPauseHold();
+    });
+    for(const type of ['pointerup','pointercancel','pointerleave','lostpointercapture'])
+      els.pause.addEventListener(type,cancelPauseHold);
+    els.pause.setAttribute('aria-label','一時停止（長押し）');
+    els.pause.title='一時停止は長押し';
+  }
+  // Prevent the in-app browser from interpreting game swipes as page gestures,
+  // scrolls, long presses, or clicks outside the canvas.
+  for(const type of ['touchstart','touchmove']){
+    canvas.addEventListener(type,e=>{if(e.cancelable)e.preventDefault();},{passive:false});
+  }
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  // A visible build identifier makes stale cached JavaScript easy to diagnose.
+  const versionTarget=document.querySelector('.install-tip');
+  if(versionTarget){
+    const version=document.createElement('span');
+    version.textContent=' · 操作修正版 v2';
+    versionTarget.appendChild(version);
+  }
   els.sound.addEventListener('click',()=>{
     isMuted=!isMuted;els.sound.textContent=isMuted?'🔇':'🔊';els.sound.setAttribute('aria-label',isMuted?'音をオン':'音をオフ');
     try{localStorage.setItem('nanko_muted',String(isMuted));}catch(_){}
