@@ -120,7 +120,7 @@
   function hideScreen(){els.screen.hidden=true;}
   function resetGame() {
     stage=0;score=0;power=1;specials=0;weapon='money';chakeClock=.35;
-    cheerClock=rand(3,5);cheerLife=0;cheerIndex=-1;
+    cheerClock=rand(3,6);cheerLife=0;cheerIndex=-1;
     player={x:W/2,y:550,hp:3,invuln:2,shot:0,tilt:0};
     enemies=[];bullets=[];enemyBullets=[];particles=[];pickups=[];texts=[];
     stageClock=0;enemyClock=0;stageBossSeen=false;stageDelay=0;boss=null;
@@ -268,7 +268,7 @@
     if(cheerClock<=0){
       // Choose a different encouragement each time; cosmetic only.
       cheerIndex=(cheerIndex+1+Math.floor(Math.random()*(cheerIndex<0?3:2)))%cheers.length;
-      cheerLife=2.6;cheerClock=rand(8,13);
+      cheerLife=1.5;cheerClock=rand(3,6);
     }
     stageClock+=dt;enemyClock-=dt;
     itemClock-=dt;
@@ -490,11 +490,11 @@
     // Large, high-contrast lettering stays inside even the narrowest playfield.
     const w=184,h=42,bx=clamp(x-w/2,8,W-w-8),by=y-96;
     const tip=clamp(x,bx+14,bx+w-14);
-    ctx.save();ctx.globalAlpha=Math.min(1,cheerLife/.2,(2.6-cheerLife)/.15);
+    ctx.save();ctx.globalAlpha=Math.min(1,cheerLife/.2,(1.5-cheerLife)/.15);
     rr(bx,by+3,w,h,17,'#70465d30');
-    rr(bx,by,w,h,17,'#fffdf1','#ed9aaf',2);
+    rr(bx,by,w,h,17,'#ffffff','#ed9aaf',2);
     ctx.beginPath();ctx.moveTo(tip-7,by+h-1);ctx.lineTo(x,by+h+12);ctx.lineTo(tip+7,by+h-1);
-    ctx.fillStyle='#fffdf1';ctx.fill();
+    ctx.fillStyle='#ffffff';ctx.fill();
     line([[tip-7,by+h],[x,by+h+12],[tip+7,by+h]],'#ed9aaf',2);
     label(cheers[cheerIndex],bx+w/2,by+27,20,'#75425c');
     ctx.restore();

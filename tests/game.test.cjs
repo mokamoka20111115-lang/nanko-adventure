@@ -17,7 +17,7 @@ source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  w
   updateButtons();\n  requestAnimationFrame(frame);`);
 vm.runInContext(source,scope);const game=scope.window.test,status=()=>scope.window.nankoStatus;
 const step=(seconds)=>{for(let i=0;i<seconds*60;i++)game.frame(1/60)};
-game.begin();assert.equal(game.cheer().life,0);step(5);assert(game.cheer().life>0);assert(game.cheer().index>=0&&game.cheer().index<3);const frozen=JSON.stringify(game.cheer());game.togglePause();step(1);assert.equal(JSON.stringify(game.cheer()),frozen);game.togglePause();game.render();game.begin();step(.1);assert.equal(status().scene,'playing');assert(game.bullets().length>0);
+game.begin();assert.equal(game.cheer().life,0);step(game.cheer().clock+.1);assert(game.cheer().life>1.2&&game.cheer().life<=1.5);assert(game.cheer().clock>=2.8&&game.cheer().clock<=6);assert(game.cheer().index>=0&&game.cheer().index<3);const frozen=JSON.stringify(game.cheer());game.togglePause();step(1);assert.equal(JSON.stringify(game.cheer()),frozen);game.togglePause();game.render();game.begin();step(.1);assert.equal(status().scene,'playing');assert(game.bullets().length>0);
 game.changeWeapon('fish');step(.5);assert(game.bullets().filter(b=>b.type==='fish').length>=3);
 game.changeWeapon('meat');step(.7);assert(game.bullets().some(b=>b.damage>=43));assert(game.bullets().some(b=>b.type==='chake'));
 const old=status().stageClock;game.togglePause();step(1);assert.equal(status().stageClock,old);game.togglePause();

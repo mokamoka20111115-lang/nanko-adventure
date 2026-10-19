@@ -20,7 +20,15 @@ const {chromium}=require('playwright');const assert=require('assert/strict');
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  const after=await page.evaluate(()=>nankoStatus.player);assert(after.x>before.x+30&&after.y<before.y-20);console.log('TOUCH DRAG PASS');
  for(const weapon of ['meat','fish','money']){await page.locator(`[data-weapon=${weapon}]`).click();assert.equal(await page.evaluate(()=>nankoStatus.weapon),weapon);}
- await page.locator('#pauseBtn').click();const time=await page.evaluate(()=>nankoStatus.stageClock);await page.waitForTimeout(200);assert.equal(await page.evaluate(()=>nankoStatus.stageClock),time);await page.locator('#mainBtn').click();
+ // A swipe and a stray click must never pause on iPhone; only deliberate hold.
+ assert.equal(await page.evaluate(()=>nankoStatus.scene),'playing');
+ await page.locator('#pauseBtn').click();assert.equal(await page.evaluate(()=>nankoStatus.scene),'playing');
+ const pauseRect=await page.locator('#pauseBtn').boundingBox();
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:pauseRect.x+pauseRect.width/2,y:pauseRect.y+pauseRect.height/2}]});
+ await page.waitForTimeout(850);
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ assert.equal(await page.evaluate(()=>nankoStatus.scene),'paused');
+ const time=await page.evaluate(()=>nankoStatus.stageClock);await page.waitForTimeout(200);assert.equal(await page.evaluate(()=>nankoStatus.stageClock),time);await page.locator('#mainBtn').click();
  await page.waitForTimeout(2200);await page.screenshot({path:'/tmp/nanko-playing.png'});
  await context.setOffline(true);await page.reload();await page.locator('#mainBtn').click();await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>nankoStatus.scene),'playing');assert(await page.evaluate(()=>nankoStatus.shots)>0);console.log('OFFLINE RELOAD PASS');
  await context.setOffline(false);
