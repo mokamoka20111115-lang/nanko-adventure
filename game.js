@@ -701,8 +701,21 @@
     if(['KeyZ','KeyX','Enter'].includes(e.code))ensureAudio();
   });
   window.addEventListener('keyup',e=>keys.delete(e.code));
-  window.addEventListener('blur',()=>{keys.clear();if(['playing','stageclear','surrender'].includes(scene))togglePause();});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();if(['playing','stageclear','surrender'].includes(scene))togglePause();}});
+  // On iOS an in-app browser can fire blur/visibility events while the player
+  // is still interacting with the game. Never convert those events into a
+  // manual pause: requestAnimationFrame naturally stops in a hidden tab, and
+  // frame() clamps elapsed time when the page becomes visible again.
+  // Only the on-screen pause button or P key should show "ひとやすみ".
+  function clearInterruptedInput() {
+    keys.clear();
+    pointerActive=false;
+    pointerId=null;
+    touchOrigin=null;
+  }
+  window.addEventListener('blur',clearInterruptedInput);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)clearInterruptedInput();
+  });
 
   // Exposed read-only diagnostics let automated browser tests verify real gameplay.
   Object.defineProperty(window,'nankoStatus',{get:()=>({scene,stage,score,hp:player.hp,weapon,shots:bullets.length,enemies:enemies.length,charge:Math.round(specials),boss:boss?.type||null,bossHP:boss?.hp||0,bossPhase:boss?.phase??null,player:{x:player.x,y:player.y},power,stageClock,laser:laser?{...laser}:null,enemyShots:enemyBullets.map(b=>({...b})),foes:enemies.map(e=>({x:e.x,y:e.y,r:e.r})),items:pickups.map(p=>({...p})),bossX:boss?.x??null})});
