@@ -22,8 +22,8 @@
   const stageMessages = ['お金を投げて、しゅっぱつ！','オフィス街でも負けないぞ！','ついに はしもと と決戦！'];
   const weaponInfo = {
     money: {label:'💴 連射がとくい！', cooldown:.13},
-    meat:  {label:'🍖 ドカンと大ダメージ！', cooldown:.58},
-    fish:  {label:'🐟 ３方向にペチペチ！', cooldown:.38}
+    meat:  {label:'🍖 うるふぎゃんぐ・高威力！', cooldown:.58},
+    fish:  {label:'🐟 子持ちあゆ・３方向！', cooldown:.38}
   };
   let scene='title', lastTime=0, elapsed=0, stage=0, stageClock=0, enemyClock=0;
   let score=0, best=0, weapon='money', power=1, specials=0, chakeClock=.35;
