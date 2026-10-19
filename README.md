@@ -1,5 +1,7 @@
 # なんこの大冒険
 
+[ゲームを遊ぶ](https://mokamoka20111115-lang.github.io/nanko-adventure/) — iPhoneはSafariで開いて「ホーム画面に追加」。
+
 なんこ＆ちゃけが、はしもとに挑む無料の縦スクロールシューティング。
 
 ## 遊び方
