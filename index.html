@@ -34,13 +34,14 @@
           <h1 id="screenTitle">なんこの<br>大冒険！</h1>
           <p id="screenText">お金・うるふぎゃんぐ・子持ちあゆを投げまくれ！<br>ラスボス「はしもと」をやっつけよう！</p>
           <button id="mainBtn" class="start-btn">🌸 ぼうけんスタート！</button>
+          <button id="newBtn" class="secondary-btn" hidden>最初から遊ぶ</button>
           <div id="screenExtra" class="screen-extra">全３ステージ · ゆるかわシューティング</div>
         </div>
       </div>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>
 
-    <section class="controller" aria-label="ゲームの操作ボタン">
+    <section id="shootControls" class="controller" aria-label="ゲームの操作ボタン">
       <div class="control-header"><strong>なげるものをえらぼう！</strong><span id="weaponHint">💴 連射がとくい！</span></div>
       <div class="weapon-row">
         <button class="weapon active" data-weapon="money"><span class="weapon-icon">💴</span><span class="weapon-label">おかね</span><small>連射</small></button>
@@ -50,11 +51,19 @@
       <button id="specialBtn" class="special-btn" disabled><span class="special-symbol">😡</span><span id="specialLabel">むかちゅくーーー！！</span><span id="specialPercent">0%</span><span id="specialFill"></span></button>
       <p class="move-tip">📱 画面をなぞって移動・攻撃は自動 ／ 💻 矢印・WASD移動、1〜3武器変更、Zで必殺技</p>
     </section>
+    <section id="rpgControls" class="controller" hidden>
+      <p id="rpgMission" class="mission">第2章：なんこ、ニッショーに出勤する！</p>
+      <div class="rpg-buttons"><button id="talkBtn" class="start-btn">話す・調べる</button><button id="rpgSaveBtn" class="secondary-btn">保存</button></div>
+      <p class="move-tip">📱 行きたい場所をタップ ／ 💻 矢印・WASDで移動、Enterで会話</p>
+    </section>
+    <dialog id="newConfirm" class="install-help"><h2>最初から遊ぶ？</h2><p>章の進行と武器の解放をリセットします。ベストスコアは残ります。</p><button id="cancelNew">戻る</button><button id="confirmNew">最初から始める</button></dialog>
     <p class="install-tip"><span id="offlineStatus" role="status">オフライン準備中…</span> · <button id="installHelpBtn">ホーム画面に追加</button></p>
     <dialog id="installHelp" class="install-help"><h2>なんこをホーム画面に！</h2><p>iPhoneではSafariでこのページを開き、共有ボタン →「ホーム画面に追加」→「追加」を選んでね。</p><p>「オフライン準備OK」と表示されたら、電波がない場所でも遊べます。音声合成の声は端末によって異なり、使えない時も文字と効果音で楽しめます。</p><button id="closeHelp">わかった！</button></dialog>
     <footer>なんこ × ちゃけ VS はしもと <span>♡</span> ぜんぶフィクションのコミカルバトル</footer>
   </main>
-  <script src="./game.js?v=cheer-v2-20261019"></script>
+  <script src="./progress.js?v=rpg-1"></script>
+  <script src="./rpg.js?v=rpg-1"></script>
+  <script src="./game.js?v=rpg-1"></script>
   <script src="pwa.js"></script>
 </body>
 </html>

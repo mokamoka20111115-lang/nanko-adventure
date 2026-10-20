@@ -1,6 +1,9 @@
 /* なんこの大冒険！ — Canvas / Vanilla JS / no external dependencies */
 (() => {
   'use strict';
+  const progress=window.NankoProgress;
+  let meatUnlocked=false,fishTime=0,fishReturn='money',killCount=0,encounter=false;
+  let rpg=null;
   const W = 390, H = 660, TAU = Math.PI * 2;
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -21,7 +24,7 @@
   const stageNames = ['なんこの旅立ち', 'サラリーマンの街', 'はしもと本社'];
   const stageMessages = ['お金を投げて、しゅっぱつ！','オフィス街でも負けないぞ！','ついに はしもと と決戦！'];
   const weaponInfo = {
-    money: {label:'💴 連射がとくい！', cooldown:.13},
+    money: {label:'💴 連射がとくい！', cooldown:.16},
     meat:  {label:'🍖 うるふぎゃんぐ・高威力！', cooldown:.58},
     fish:  {label:'🐟 子持ちあゆ・３方向！', cooldown:.38}
   };
@@ -115,6 +118,7 @@
     els.main.textContent=button;
     els.extra.textContent=extra||'';
     els.screen.hidden=false;
+    document.getElementById('newBtn').hidden=!['title','lost','won'].includes(scene);
     els.pause.disabled=scene!=='paused' && scene!=='playing';
   }
   function hideScreen(){els.screen.hidden=true;}
@@ -128,24 +132,58 @@
     pointerActive=false;pointerId=null;keys.clear();musicClock=0;musicNote=0;
     updateButtons();changeWeapon('money');
   }
-  function begin() {
-    ensureAudio();resetGame();scene='playing';hideScreen();els.pause.disabled=false;
-    showToast('STAGE 1\nなんこの旅立ち',2.2);sfx('power');
+  function saveStage(next=stage){
+    if(encounter)return;
+    if(!progress.write({stage:next,meat:meatUnlocked,power,score,chapter:'shooting'}))showToast('保存できません。この画面では続けて遊べます',3);
   }
+  function begin() {
+    if(scene==='won'||(scene==='title'&&progress.get().chapter==='rpg')){startRPG();return;}
+    if(encounter&&scene==='lost'){startEncounter();return;}
+    const saved=progress.get();
+    ensureAudio();resetGame();stage=saved.stage;meatUnlocked=saved.meat;power=saved.power;score=saved.score;
+    fishTime=0;fishReturn='money';killCount=0;encounter=false;
+    scene='playing';hideScreen();setMode(false);els.pause.disabled=false;updateButtons();
+    showToast(`STAGE ${stage+1}\n${stageNames[stage]}`,2.2);sfx('power');
+  }
+  function setMode(isRpg){
+    document.getElementById('shootControls').hidden=isRpg;
+    document.getElementById('rpgControls').hidden=!isRpg;
+  }
+  function startRPG(){
+    if(!progress.get().rpgUnlocked)return;
+    ensureAudio();scene='rpg';encounter=false;hideScreen();setMode(true);keys.clear();pointerActive=false;
+    progress.write({chapter:'rpg'});rpg.enter();els.pause.disabled=false;updateButtons();
+  }
+  function startEncounter(){
+    ensureAudio();resetGame();encounter=true;stage=0;meatUnlocked=progress.get().meat;power=1;fishTime=0;
+    scene='playing';hideScreen();setMode(false);els.pause.disabled=false;summonBoss();boss.hp=boss.max=600;
+    showToast('書類の嵐！ 道をひらこう！',2);updateButtons();
+  }
+  function freshStart(){progress.reset();encounter=false;scene='title';begin();}
+
   function updateButtons() {
+    els.weapons.forEach(b=>{
+      const t=b.dataset.weapon;b.disabled=t==='meat'?!meatUnlocked:t==='fish'?fishTime<=0:false;
+      const small=b.querySelector('small');if(small)small.textContent=t==='money'?'基本の連射':t==='meat'?(meatUnlocked?'高威力':'敵から入手'):(fishTime>0?`残り ${Math.ceil(fishTime)} 秒`:'レア・30秒');
+      b.setAttribute('aria-label',t==='money'?'おかね':t==='meat'?(meatUnlocked?'うるふぎゃんぐ':'うるふぎゃんぐ：敵のアイテムで解放'):(fishTime>0?`子持ちあゆ 残り${Math.ceil(fishTime)}秒`:'子持ちあゆ：レアアイテムで30秒解放'));
+      b.classList.toggle('active',t===weapon);b.setAttribute('aria-pressed',String(t===weapon));
+    });
+    if(fishTime>0)els.hint.textContent=`🐟 残り ${Math.ceil(fishTime)}秒`;
+
     els.special.disabled=scene!=='playing'||specials<100;
     els.specialFill.style.width=clamp(specials,0,100)+'%';
     els.specialPercent.textContent=Math.round(specials)+'%';
     els.pause.textContent=scene==='paused'?'▶':'⏸';
   }
   function changeWeapon(type) {
-    if(!weaponInfo[type])return;
+    if(!weaponInfo[type]||(type==='meat'&&!meatUnlocked)||(type==='fish'&&fishTime<=0))return;
+    if(fishTime>0&&type!=='fish')fishReturn=type;
     weapon=type;player.shot=Math.min(player.shot, .08);
     els.weapons.forEach(b=>{const selected=b.dataset.weapon===weapon;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
     els.hint.textContent=weaponInfo[type].label;
   }
   function togglePause() {
-    if(['playing','stageclear','surrender'].includes(scene)){
+    if(['playing','stageclear','surrender','rpg'].includes(scene)){
       resumeScene=scene;pointerActive=false;pointerId=null;keys.clear();
       if('speechSynthesis' in window)speechSynthesis.cancel();
       scene='paused';screen('ちょっと休憩','ひとやすみ ♡','準備ができたら、また出発しよう！','▶ つづきから','P キーでも再開できるよ');
@@ -155,8 +193,9 @@
   function finish(win) {
     scene=win?'won':'lost';els.pause.disabled=true;
     if(score>best){best=score;if(highScoreAvailable)try{localStorage.setItem('nanko_adventure_best',String(best));}catch(_){}}
-    if(win){sfx('power');screen('✨ GAME CLEAR ✨','やったね！<br>なんこ！','はしもと「まいった〜！ 今日は定時で帰る！」<br>なんこ＆ちゃけの大勝利！','🌸 もういちど遊ぶ',`スコア ${score.toLocaleString()} 点　／　ベスト ${best.toLocaleString()} 点`);}
-    else {sfx('hit');screen('GAME OVER','なんこは<br>つかれちゃった…','ちゃけ「まだまだいけるよ！」<br>何度でも挑戦しよう！','💗 リトライ！',`スコア ${score.toLocaleString()} 点　／　ベスト ${best.toLocaleString()} 点`);}
+    if(win&&encounter){rpg.winEncounter();startRPG();return;}
+    if(win){progress.write({rpgUnlocked:true,chapter:'rpg'});sfx('power');screen('✨ GAME CLEAR ✨','やったね！<br>なんこ！','はしもと「まいった〜！ 今日は定時で帰る！」<br>なんこ＆ちゃけの大勝利！','🏢 第2章・ニッショーへ出勤！',`スコア ${score.toLocaleString()} 点　／　ベスト ${best.toLocaleString()} 点`);}
+    else {sfx('hit');screen('GAME OVER','なんこは<br>つかれちゃった…','ちゃけ「まだまだいけるよ！」<br>何度でも挑戦しよう！',encounter?'💗 書類バトルを再挑戦':`💗 ステージ${stage+1}から再挑戦`,`スコア ${score.toLocaleString()} 点　／　ベスト ${best.toLocaleString()} 点`);}
     updateButtons();
   }
   function addParticle(x,y,color,n=10,v=115){for(let i=0;i<n;i++){const a=rand(0,TAU),speed=rand(25,v);particles.push({x,y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,r:rand(2,5),color,life:rand(.25,.68),max:.68});}}
@@ -196,7 +235,7 @@
   }
   function summonBoss() {
     stageBossSeen=true;enemies=[];enemyBullets=[];
-    boss={type:stage===0?'printer':stage===1?'manager':'hashimoto',x:W/2,y:-85,r:stage===2?50:40,hp:stage===0?225:stage===1?320:820,max:stage===0?225:stage===1?320:820,shot:1.8,pattern:0,t:0,phase:0,invuln:0};
+    boss={type:stage===0?'printer':stage===1?'manager':'hashimoto',x:W/2,y:-85,r:stage===2?50:40,hp:[900,1200,3000][stage],max:[900,1200,3000][stage],shot:1.8,pattern:0,t:0,phase:0,invuln:0};
     showToast(stage===2?'⚠️ はしもと登場！！':'⚠️ 中ボス が あらわれた！',2.4);
     sfx('warn');
   }
@@ -207,7 +246,9 @@
     sfx('boom'); quake=11;effectFlash=.4;
     addScore(stage===2?6000:1500);
     boss=null;enemyBullets=[];laser=null;bullets=[];
-    if(stage===2){scene='surrender';surrender={x,y,t:0};stageDelay=3.2;speakSpecial('まいった〜！');showToast('まいった〜！',3);updateButtons();return;}
+    if(encounter){finish(true);return;}
+    if(stage===2){progress.write({rpgUnlocked:true,chapter:'rpg'});scene='surrender';surrender={x,y,t:0};stageDelay=3.2;speakSpecial('まいった〜！');showToast('まいった〜！',3);updateButtons();return;}
+    saveStage(stage+1);
     scene='stageclear';stageDelay=2.9;showToast('✨ STAGE CLEAR！ ✨',2.5);
     specials=clamp(specials+35,0,100);player.hp=Math.min(3,player.hp+1);updateButtons();
   }
@@ -215,7 +256,7 @@
   function shoot() {
     if(weapon==='money'){
       const x=player.x+(Math.random()-.5)*4;
-      bullets.push({x,y:player.y-35,vx:0,vy:-485,r:8,damage:8*power,type:Math.random()<.3?'coin':'money',life:1.6,pierce:0});
+      bullets.push({x,y:player.y-35,vx:0,vy:-485,r:8,damage:6*power,type:Math.random()<.3?'coin':'money',life:1.6,pierce:0});
     } else if(weapon==='meat') {
       bullets.push({x:player.x,y:player.y-34,vx:0,vy:-290,r:16,damage:43*power,type:'meat',variant:Math.random()<.5?'steak':'bone',life:2.2,pierce:0,splash:50});
     } else {
@@ -236,7 +277,9 @@
   function killed(e) {
     const x=e.x,y=e.y;
     addScore(e.points);sfx('pop');addParticle(x,y,choose(['#ffd87f','#ffc8e5','#e7bbf7']),11,110);
-    dropCount++;
+    dropCount++;killCount++;
+    if(!meatUnlocked&&stage===0&&(killCount===3||killCount%5===0))spawnPickup(x,y,'meat');
+    else if(Math.random()<.06)spawnPickup(x,y,'fish');
     if(Math.random()<.27)spawnPickup(x,y,Math.random()<.15?'heart':Math.random()<.17?'power':'star');
     specials=clamp(specials+2.8,0,100);
   }
@@ -252,6 +295,7 @@
   }
   function tick(dt){
     elapsed+=dt;music(dt);
+    if(scene==='rpg'){rpg.tick(dt,keys);return;}
     if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)els.toast.classList.remove('show');}
     effectFlash=Math.max(0,effectFlash-dt);quake=Math.max(0,quake-dt*15);specialFX=Math.max(0,specialFX-dt);
     if(scene==='surrender'){
@@ -263,6 +307,7 @@
       if(stageDelay<=0)nextStage();return;
     }
     if(scene!=='playing'){updateParticles(dt);return;}
+    if(fishTime>0){fishTime=Math.max(0,fishTime-dt);if(fishTime===0){if(weapon==='fish')changeWeapon(fishReturn);els.hint.textContent=weaponInfo[weapon].label;showToast('子持ちあゆの時間が終わったよ',1.5);}}
     cheerLife=Math.max(0,cheerLife-dt);
     cheerClock-=dt;
     if(cheerClock<=0){
@@ -272,7 +317,7 @@
     }
     stageClock+=dt;enemyClock-=dt;
     itemClock-=dt;
-    if(itemClock<=0&&!boss){spawnPickup(clamp(player.x,40,W-40),220,dropCount%2?'power':'heart');dropCount++;itemClock=14;}
+    if(itemClock<=0){spawnPickup(clamp(player.x,40,W-40),220,boss?'heart':dropCount%2?'power':'heart');dropCount++;itemClock=boss?18:14;}
     specials=clamp(specials+dt*1.1,0,100);
     player.invuln=Math.max(0,player.invuln-dt);
     let vx=0,vy=0;
@@ -315,11 +360,11 @@
       boss.phase=stage===2?(boss.hp<boss.max*.32?2:boss.hp<boss.max*.68?1:0):boss.hp<boss.max*.48?1:0;
       boss.shot-=dt;
       if(boss.shot<=0&&boss.y>95){
-        const patterns=stage===2?['fan','ties','ring','flash','rain']:['fan','single','ring'];
+        const patterns=stage===2?(boss.phase===0?['fan','ties','single']:boss.phase===1?['fan','ring','flash','ties']:['fan','ties','ring','flash','rain']):(boss.phase===0?['single','fan']:['fan','ring','ties']);
         enemyFire(boss.x,boss.y+36,patterns[boss.pattern%patterns.length],boss.phase);
         if(stage===2&&boss.phase===2&&boss.pattern%3===1)enemyFire(boss.x,boss.y+36,'fan',2);
         boss.pattern++;
-        boss.shot=stage===2?Math.max(.62,1.25-boss.phase*.24):1.25;
+        boss.shot=stage===2?Math.max(.62,1.25-boss.phase*.24):(boss.phase===0?1.5:1.2);
         if(boss.phase>0&&boss.pattern%4===0)sfx('warn');
       }
     }
@@ -342,7 +387,9 @@
       p.y+=p.vy*dt;p.x+=p.vx*dt;p.t+=dt;
       if(distanceSq(player,p)<(p.r+19)**2){
         p.y=H+100;sfx('power');
-        if(p.type==='heart'){player.hp=Math.min(3,player.hp+1);floatText(player.x,player.y-38,'HP +1','#ff78ab');}
+        if(p.type==='meat'){meatUnlocked=true;if(!encounter)progress.write({meat:true});changeWeapon('meat');showToast('うるふぎゃんぐ 解放！',2);}
+        else if(p.type==='fish'){if(weapon!=='fish')fishReturn=weapon;fishTime=30;changeWeapon('fish');showToast('レア！ 子持ちあゆ 30秒！',2);}
+        else if(p.type==='heart'){player.hp=Math.min(3,player.hp+1);floatText(player.x,player.y-38,'HP +1','#ff78ab');}
         else if(p.type==='power'){power=Math.min(3,power+1);floatText(player.x,player.y-38,'POWER UP!','#ffe77e');}
         else {specials=Math.min(100,specials+15);floatText(player.x,player.y-38,'ゲージ +15%','#ffdf85');}
       }
@@ -602,7 +649,8 @@
   function drawPickup(p){
     ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.sin(p.t*3)*.18);
     oval(0,0,15,15,'#ffffffc8');
-    if(p.type==='heart')label('♥',0,1,20,'#f16b9b');
+    if(p.type==='meat'||p.type==='fish'){oval(0,0,19,19,'#fff3a4','#df8c6b',2);label(p.type==='meat'?'肉':'魚',0,1,20,'#75425c');}
+    else if(p.type==='heart')label('♥',0,1,20,'#f16b9b');
     else if(p.type==='power')star(0,0,12,5,5,'#ffc34e');
     else label('✦',0,0,21,'#9564c2');
     ctx.restore();
@@ -627,6 +675,7 @@
     }
   }
   function render(){
+    if(scene==='rpg'||(scene==='paused'&&resumeScene==='rpg')){rpg.render();return;}
     ctx.save();
     if(quake>0)ctx.translate(rand(-quake,quake),rand(-quake,quake));
     bg();
@@ -726,7 +775,7 @@
   const versionTarget=document.querySelector('.install-tip');
   if(versionTarget){
     const version=document.createElement('span');
-    version.textContent=' · 操作修正版 v2';
+    version.textContent=' · 第2章対応 v1';
     versionTarget.appendChild(version);
   }
   els.sound.addEventListener('click',()=>{
@@ -748,18 +797,20 @@
     }else{player.x=clamp(x,24,W-24);player.y=clamp(y,255,H-42);}
   };
   canvas.addEventListener('pointerdown',e=>{
+    if(scene==='rpg'){rpg.target(e,canvas);ensureAudio();e.preventDefault();return;}
     if(scene!=='playing'||pointerActive)return;
     const box=canvas.getBoundingClientRect();touchOrigin={x:(e.clientX-box.left)*W/box.width,y:(e.clientY-box.top)*H/box.height,px:player.x,py:player.y};
     pointerActive=true;pointerId=e.pointerId;
     try{canvas.setPointerCapture(e.pointerId);}catch(_){}
     movePointer(e);ensureAudio();e.preventDefault();
   });
-  canvas.addEventListener('pointermove',e=>{if(pointerActive&&e.pointerId===pointerId&&scene==='playing'){movePointer(e);e.preventDefault();}});
+  canvas.addEventListener('pointermove',e=>{if(scene==='rpg'&&e.buttons){rpg.target(e,canvas);e.preventDefault();return;}if(pointerActive&&e.pointerId===pointerId&&scene==='playing'){movePointer(e);e.preventDefault();}});
   for(const name of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(name,e=>{if(e.pointerId===pointerId){pointerActive=false;pointerId=null;}});
   window.addEventListener('keydown',e=>{
     if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
     if(e.repeat&&['KeyZ','KeyX','KeyP','Digit1','Digit2','Digit3'].includes(e.code))return;
     keys.add(e.code);
+    if(scene==='rpg'&&(e.code==='Space'||e.code==='Enter')&&!e.repeat)rpg.interact();
     if(e.code==='Digit1')changeWeapon('money');
     if(e.code==='Digit2')changeWeapon('meat');
     if(e.code==='Digit3')changeWeapon('fish');
@@ -776,6 +827,7 @@
   // Only the on-screen pause button or P key should show "ひとやすみ".
   function clearInterruptedInput() {
     keys.clear();
+    if(rpg)rpg.stop();
     pointerActive=false;
     pointerId=null;
     touchOrigin=null;
@@ -786,7 +838,18 @@
   });
 
   // Exposed read-only diagnostics let automated browser tests verify real gameplay.
-  Object.defineProperty(window,'nankoStatus',{get:()=>({scene,stage,score,hp:player.hp,weapon,shots:bullets.length,enemies:enemies.length,charge:Math.round(specials),boss:boss?.type||null,bossHP:boss?.hp||0,bossPhase:boss?.phase??null,player:{x:player.x,y:player.y},power,stageClock,laser:laser?{...laser}:null,enemyShots:enemyBullets.map(b=>({...b})),foes:enemies.map(e=>({x:e.x,y:e.y,r:e.r})),items:pickups.map(p=>({...p})),bossX:boss?.x??null})});
+  Object.defineProperty(window,'nankoStatus',{get:()=>({scene,stage,meatUnlocked,fishTime,encounter,rpg:rpg?.status(),score,hp:player.hp,weapon,shots:bullets.length,enemies:enemies.length,charge:Math.round(specials),boss:boss?.type||null,bossHP:boss?.hp||0,bossPhase:boss?.phase??null,player:{x:player.x,y:player.y},power,stageClock,laser:laser?{...laser}:null,enemyShots:enemyBullets.map(b=>({...b})),foes:enemies.map(e=>({x:e.x,y:e.y,r:e.r})),items:pickups.map(p=>({...p})),bossX:boss?.x??null})});
+  rpg=window.createNankoRPG({ctx,W,H,rr,label,oval,line,drawNanko,drawChake,progress,sfx,startEncounter});
+  document.getElementById('talkBtn').addEventListener('click',()=>{if(scene==='rpg')rpg.interact();});
+  document.getElementById('rpgSaveBtn').addEventListener('click',()=>{if(scene==='rpg'){rpg.save();rpg.say('ちゃけ','ここまで覚えたよ！ 次もつづきから出勤しよう。');}});
+  document.getElementById('newBtn').addEventListener('click',()=>{
+    document.getElementById('newConfirm').showModal();
+  });
+  document.getElementById('cancelNew').addEventListener('click',()=>document.getElementById('newConfirm').close());
+  document.getElementById('confirmNew').addEventListener('click',()=>{document.getElementById('newConfirm').close();freshStart();});
+  if(progress.get().chapter==='rpg')els.main.textContent='🏢 第2章のつづきから';
+  else if(progress.get().stage>0)els.main.textContent=`🌸 ステージ${progress.get().stage+1}のつづきから`;
+  document.getElementById('newBtn').hidden=false;
   els.sound.textContent=isMuted?'🔇':'🔊';
   els.extra.textContent=`全３ステージ · ベスト ${best.toLocaleString()} 点`;
   updateButtons();
