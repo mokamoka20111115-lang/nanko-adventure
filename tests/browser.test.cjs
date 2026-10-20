@@ -35,7 +35,7 @@ const {chromium}=require('playwright');const assert=require('assert/strict');
  // Accelerate the browser clock, retaining production code, damage and movement speed.
  await page.reload();await page.clock.install();await page.locator('#mainBtn').click();
  const stages=new Set(),phases=new Set();let pressed=[];
- for(let i=0;i<7000;i++){
+ for(let i=0;i<12000;i++){
   const s=await page.evaluate(()=>nankoStatus);stages.add(s.stage);if(s.stage===2&&s.boss)phases.add(s.bossPhase);
   if(['won','lost'].includes(s.scene)){console.log('BROWSER PLAYTHROUGH',s.scene,s.score,s.hp,[...stages],[...phases]);assert.equal(s.scene,'won');break;}
   if(s.scene==='playing'){
@@ -59,7 +59,7 @@ const {chromium}=require('playwright');const assert=require('assert/strict');
   await page.clock.runFor(100);
   if(i%600===0)console.log('PLAY',i/10,'stage',s.stage+1,'HP',s.hp);
  }
- assert.equal(await page.evaluate(()=>nankoStatus.scene),'won');assert.equal(stages.size,3);assert.equal(phases.size,3);
+ assert.equal(await page.evaluate(()=>nankoStatus.scene),'won');assert.equal(stages.size,3);assert.equal(phases.size,4);
  await page.screenshot({path:'/tmp/nanko-browser-clear.png'});assert.deepEqual(errors,[]);console.log('PASS: no page errors');
  await page.locator('#mainBtn').click();assert.equal(await page.evaluate(()=>nankoStatus.scene),'rpg');
  await page.locator('#talkBtn').click();

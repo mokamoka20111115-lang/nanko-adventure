@@ -4,6 +4,8 @@
   const progress=window.NankoProgress;
   let meatUnlocked=false,fishTime=0,fishReturn='money',killCount=0,encounter=false;
   let rpg=null;
+  let chakeBuff={feather:0,cheek:0,awake:0};
+  let warning=null;
   const W = 390, H = 660, TAU = Math.PI * 2;
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -124,6 +126,7 @@
   function hideScreen(){els.screen.hidden=true;}
   function resetGame() {
     stage=0;score=0;power=1;specials=0;weapon='money';chakeClock=.35;
+    chakeBuff={feather:0,cheek:0,awake:0};warning=null;
     cheerClock=rand(3,6);cheerLife=0;cheerIndex=-1;
     player={x:W/2,y:550,hp:3,invuln:2,shot:0,tilt:0};
     enemies=[];bullets=[];enemyBullets=[];particles=[];pickups=[];texts=[];
@@ -211,10 +214,18 @@
   function spawnEnemy() {
     const kind=choose(stage===0?['paper','paper','stamp','tie']:stage===1?['paper','stamp','tie','card']:['paper','stamp','tie','card','card']);
     const x=rand(28,W-28);
-    enemies.push({type:kind,x,y:-40,base:x,t:0,seed:rand(0,10),hp:kind==='tie'?17:kind==='card'?14:kind==='stamp'?16:11,r:kind==='tie'?20:17,shot:rand(1.0,2.2),speed:rand(48,76)+stage*12,points:kind==='tie'?240:120});
+    enemies.push({type:kind,x,y:-40,base:x,t:0,seed:rand(0,10),hp:kind==='tie'?34:kind==='card'?28:kind==='stamp'?32:22,r:kind==='tie'?20:17,shot:rand(1.0,2.2),speed:rand(48,76)+stage*12,points:kind==='tie'?240:120});
   }
   function enemyFire(x,y,pattern='single',phase=0){
-    if(pattern==='single') {
+    if(['homing','spiral','boomerang','feint','pincer'].includes(pattern)){
+      const count=pattern==='spiral'?10:pattern==='pincer'?6:3;
+      for(let i=0;i<count;i++){
+        let bx=x,by=y,a=Math.PI/2+(i-(count-1)/2)*.35,sp=125;
+        if(pattern==='spiral'){a=TAU*i/count+elapsed*.55;sp=110;}
+        if(pattern==='pincer'){bx=i%2?W-8:8;by=170+Math.floor(i/2)*55;a=i%2?2.2:.94;sp=115;}
+        enemyBullets.push({x:bx,y:by,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:7,type:pattern==='boomerang'?'tie':'card',motion:pattern,age:0});
+      }
+    }else if(pattern==='single') {
       const dx=player.x-x,dy=player.y-y;const a=Math.atan2(dy,dx),sp=98+stage*16;
       enemyBullets.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:7,type:'memo'});
     } else if(pattern==='fan'){
@@ -234,8 +245,8 @@
     }
   }
   function summonBoss() {
-    stageBossSeen=true;enemies=[];enemyBullets=[];
-    boss={type:stage===0?'printer':stage===1?'manager':'hashimoto',x:W/2,y:-85,r:stage===2?50:40,hp:[900,1200,3000][stage],max:[900,1200,3000][stage],shot:1.8,pattern:0,t:0,phase:0,invuln:0};
+    stageBossSeen=true;enemies=[];enemyBullets=[];warning=null;
+    boss={type:stage===0?'printer':stage===1?'manager':'hashimoto',x:W/2,y:-85,r:stage===2?50:40,hp:[1800,2400,6000][stage],max:[1800,2400,6000][stage],shot:1.8,pattern:0,t:0,phase:0,invuln:0};
     showToast(stage===2?'⚠️ はしもと登場！！':'⚠️ 中ボス が あらわれた！',2.4);
     sfx('warn');
   }
@@ -245,7 +256,7 @@
     for(let i=0;i<5;i++)addParticle(x+rand(-50,50),y+rand(-40,40),choose(['#ffc96e','#ffe6a8','#fa8db4','#ffffff']),14,205);
     sfx('boom'); quake=11;effectFlash=.4;
     addScore(stage===2?6000:1500);
-    boss=null;enemyBullets=[];laser=null;bullets=[];
+    boss=null;enemyBullets=[];laser=null;bullets=[];warning=null;
     if(encounter){finish(true);return;}
     if(stage===2){progress.write({rpgUnlocked:true,chapter:'rpg'});scene='surrender';surrender={x,y,t:0};stageDelay=3.2;speakSpecial('まいった〜！');showToast('まいった〜！',3);updateButtons();return;}
     saveStage(stage+1);
@@ -255,19 +266,21 @@
   function nextStage(){itemClock=10;laser=null;stage++;stageClock=0;enemyClock=0;stageBossSeen=false;boss=null;scene='playing';player.invuln=1.8;player.x=W/2;player.y=550;enemies=[];bullets=[];enemyBullets=[];pickups=[];showToast(`STAGE ${stage+1}\n${stageNames[stage]}`,2.7);sfx('power');updateButtons();}
   function shoot() {
     if(weapon==='money'){
-      const x=player.x+(Math.random()-.5)*4;
-      bullets.push({x,y:player.y-35,vx:0,vy:-485,r:8,damage:6*power,type:Math.random()<.3?'coin':'money',life:1.6,pierce:0});
+      const coin=Math.random()<.24;
+      for(const angle of (power===3?[-.14,0,.14]:power===2?[-.08,.08]:[0]))
+        bullets.push({x:player.x,y:player.y-35,vx:Math.sin(angle)*485+(coin?choose([-110,110]):0),vy:-485,r:8,damage:power===1?6:power===2?7:8,type:coin?'coin':'money',life:1.6,bounce:coin?2:0,pierce:0});
     } else if(weapon==='meat') {
-      bullets.push({x:player.x,y:player.y-34,vx:0,vy:-290,r:16,damage:43*power,type:'meat',variant:Math.random()<.5?'steak':'bone',life:2.2,pierce:0,splash:50});
+      const giant=Math.random()<.18;
+      bullets.push({giant,x:player.x,y:player.y-34,vx:0,vy:-290,r:giant?23:16,damage:43*power*(giant?1.4:1),type:'meat',variant:Math.random()<.5?'steak':'bone',life:2.2,pierce:0,splash:giant?85:60});
     } else {
-      for(const angle of [-.26,0,.26])bullets.push({x:player.x,y:player.y-30,vx:Math.sin(angle)*295,vy:-Math.cos(angle)*340,r:12,damage:13*power,type:'fish',variant:Math.random()<.5?'sea':'bream',life:2.0,pierce:0,spin:rand(0,TAU)});
+      for(const angle of [-.26,0,.26])bullets.push({x:player.x,y:player.y-30,vx:Math.sin(angle)*295,vy:-Math.cos(angle)*340,r:12,damage:13*power,type:'fish',variant:Math.random()<.5?'sea':'bream',life:2.0,pierce:Math.random()<.35?2:0,spin:rand(0,TAU)});
     }
     if(Math.random()<.45)sfx(weapon);
   }
   function special() {
     if(scene!=='playing'||specials<100)return;
     ensureAudio();specials=0;specialFX=2.25;effectFlash=.55;quake=11;
-    enemyBullets=[];laser=null;player.invuln=Math.max(player.invuln,2.5);
+    enemyBullets=[];laser=null;warning=null;player.invuln=Math.max(player.invuln,2.5);
     for(const e of enemies)e.hp-=105;
     if(boss)boss.hp-=stage===2?260:190;
     for(let k=0;k<85;k++)addParticle(rand(0,W),rand(70,H-110),choose(['#ffffff','#ff9bc0','#fff3a4','#a3e3fb']),1,220);
@@ -279,11 +292,17 @@
     addScore(e.points);sfx('pop');addParticle(x,y,choose(['#ffd87f','#ffc8e5','#e7bbf7']),11,110);
     dropCount++;killCount++;
     if(!meatUnlocked&&stage===0&&(killCount===3||killCount%5===0))spawnPickup(x,y,'meat');
-    else if(Math.random()<.06)spawnPickup(x,y,'fish');
+    else if(Math.random()<.03)spawnPickup(x,y,'fish');
     if(Math.random()<.27)spawnPickup(x,y,Math.random()<.15?'heart':Math.random()<.17?'power':'star');
+    const birdDrop=Math.random();
+    if(birdDrop<.02)spawnPickup(x,y,'awake');
+    else if(birdDrop<.07)spawnPickup(x,y,'feather');
+    else if(birdDrop<.12)spawnPickup(x,y,'cheek');
     specials=clamp(specials+2.8,0,100);
   }
   function hitBullet(b,e) {
+    if(b.hits?.has(e))return;
+    (b.hits||(b.hits=new Set())).add(e);
     e.hp-=b.damage;
     addParticle(b.x,b.y,weapon==='meat'?'#e89465':'#fff1a2',3,55);
     if(b.splash){
@@ -291,7 +310,7 @@
       for(const other of enemies)if(other!==e&&distanceSq(other,b)<b.splash*b.splash)other.hp-=b.damage*.45;
       if(boss&&boss!==e&&distanceSq(boss,b)<(boss.r+b.splash)**2)boss.hp-=b.damage*.38;
     }
-    b.life=0;
+    if(b.pierce>0)b.pierce--;else b.life=0;
   }
   function tick(dt){
     elapsed+=dt;music(dt);
@@ -332,10 +351,11 @@
     player.shot-=dt;
     if(player.shot<=0){shoot();player.shot=weaponInfo[weapon].cooldown/(1+(power-1)*.12);}
     // Chake always follows Nanko and fires little golden feather shots automatically.
+    for(const key of Object.keys(chakeBuff))chakeBuff[key]=Math.max(0,chakeBuff[key]-dt);
     chakeClock-=dt;
     if(chakeClock<=0){
-      bullets.push({x:clamp(player.x-49,25,W-25),y:player.y-10,vx:65,vy:-380,r:7,damage:9,type:'chake',life:1.8,pierce:0});
-      chakeClock=.52;
+      for(const angle of (chakeBuff.feather>0?[-.28,0,.28]:[0]))bullets.push({x:clamp(player.x-49,25,W-25),y:player.y-10,vx:65+Math.sin(angle)*380,vy:-Math.cos(angle)*380,r:7,damage:(chakeBuff.awake>0?11:9)*(chakeBuff.cheek>0?2:1),type:'chake',life:1.8,pierce:0,homing:chakeBuff.awake>0});
+      chakeClock=chakeBuff.awake>0?.24:.52;
     }
     if(!stageBossSeen&&stageClock<(stage===0?47:stage===1?55:57) && enemyClock<=0){
       spawnEnemy();enemyClock=rand(stage===0?.72:.47,stage===0?1.30:.96);
@@ -357,26 +377,41 @@
       boss.t+=dt;
       boss.y+=(115-boss.y)*Math.min(1,dt*1.1);
       boss.x=W/2+Math.sin(boss.t*(stage===2?1.23:1.5))*104;
-      boss.phase=stage===2?(boss.hp<boss.max*.32?2:boss.hp<boss.max*.68?1:0):boss.hp<boss.max*.48?1:0;
+      boss.phase=stage===2?(boss.hp<boss.max*.15?3:boss.hp<boss.max*.40?2:boss.hp<boss.max*.70?1:0):boss.hp<boss.max*.48?1:0;
       boss.shot-=dt;
       if(boss.shot<=0&&boss.y>95){
-        const patterns=stage===2?(boss.phase===0?['fan','ties','single']:boss.phase===1?['fan','ring','flash','ties']:['fan','ties','ring','flash','rain']):(boss.phase===0?['single','fan']:['fan','ring','ties']);
-        enemyFire(boss.x,boss.y+36,patterns[boss.pattern%patterns.length],boss.phase);
-        if(stage===2&&boss.phase===2&&boss.pattern%3===1)enemyFire(boss.x,boss.y+36,'fan',2);
+        if(stage===2){
+          const patterns=[['homing','spiral','boomerang'],['feint','pincer','flash','spiral'],['homing','pincer','boomerang','feint'],['spiral','pincer','homing','flash','feint']][boss.phase];
+          const pattern=patterns[boss.pattern%patterns.length];
+          warning={pattern,time:1.05,x:boss.x,y:boss.y+36,phase:boss.phase};
+          sfx('warn');
+        }else enemyFire(boss.x,boss.y+36,(boss.phase===0?['single','fan']:['fan','ring','ties'])[boss.pattern%3]||'single',boss.phase);
         boss.pattern++;
-        boss.shot=stage===2?Math.max(.62,1.25-boss.phase*.24):(boss.phase===0?1.5:1.2);
+        boss.shot=stage===2?3.3-boss.phase*.3:(boss.phase===0?1.5:1.2);
         if(boss.phase>0&&boss.pattern%4===0)sfx('warn');
       }
     }
+    if(warning){warning.time-=dt;if(warning.time<=0){
+      enemyFire(warning.x,warning.y,warning.pattern,warning.phase);
+      if(warning.phase>=2&&warning.pattern!=='flash')enemyFire(warning.x,warning.y,'ties',0);
+      warning=null;
+    }}
     // Move projectiles and check hits against ordinary enemies and bosses.
     for(const b of bullets){
       if(b.life<=0)continue;
+      if(b.homing){const target=[...enemies,boss].filter(e=>e&&e.hp>0).sort((a,c)=>distanceSq(a,b)-distanceSq(c,b))[0];if(target){const a=Math.atan2(target.y-b.y,target.x-b.x);b.vx+=(Math.cos(a)*380-b.vx)*Math.min(1,dt*6);b.vy+=(Math.sin(a)*380-b.vy)*Math.min(1,dt*6);}}
       b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+      if(b.bounce>0&&(b.x<10||b.x>W-10)){b.x=clamp(b.x,10,W-10);b.vx*=-1;b.bounce--;}
+
       if(b.spin!=null)b.spin+=dt*8;
-      for(const e of enemies){if(e.hp>0&&(b.x-e.x)**2+(b.y-e.y)**2<(e.r+b.r*.65)**2){hitBullet(b,e);break;}}
+      for(const e of enemies){if(e.hp>0&&!b.hits?.has(e)&&(b.x-e.x)**2+(b.y-e.y)**2<(e.r+b.r*.65)**2){hitBullet(b,e);break;}}
       if(b.life>0&&boss&&Math.abs(b.x-boss.x)<boss.r+b.r*.55&&Math.abs(b.y-boss.y)<boss.r*.82+b.r*.5)hitBullet(b,boss);
     }
     for(const b of enemyBullets){
+      b.age=(b.age||0)+dt;
+      if(b.motion==='homing'&&b.age<1.25){const a=Math.atan2(player.y-b.y,player.x-b.x);b.vx+=(Math.cos(a)*125-b.vx)*dt*1.3;b.vy+=(Math.sin(a)*125-b.vy)*dt*1.3;}
+      if(b.motion==='boomerang'&&b.age>1.8)b.vy=Math.max(-160,b.vy-dt*210);
+      if(b.motion==='feint'&&b.age>1.15&&!b.turned){b.vx*=-1;b.turned=true;}
       b.x+=b.vx*dt;b.y+=b.vy*dt;
       if(player.invuln===0&&distanceSq(player,b)<(13+b.r*.6)**2){b.y=H+100;damagePlayer();}
     }
@@ -389,6 +424,7 @@
         p.y=H+100;sfx('power');
         if(p.type==='meat'){meatUnlocked=true;if(!encounter)progress.write({meat:true});changeWeapon('meat');showToast('うるふぎゃんぐ 解放！',2);}
         else if(p.type==='fish'){if(weapon!=='fish')fishReturn=weapon;fishTime=30;changeWeapon('fish');showToast('レア！ 子持ちあゆ 30秒！',2);}
+        else if(['feather','cheek','awake'].includes(p.type)){chakeBuff[p.type]=p.type==='awake'?20:45;showToast({feather:'ちゃけの羽根！ 3方向・45秒',cheek:'オレンジほっぺ！ 威力2倍・45秒',awake:'ちゃけ覚醒！ 追尾連射・20秒'}[p.type],2);}
         else if(p.type==='heart'){player.hp=Math.min(3,player.hp+1);floatText(player.x,player.y-38,'HP +1','#ff78ab');}
         else if(p.type==='power'){power=Math.min(3,power+1);floatText(player.x,player.y-38,'POWER UP!','#ffe77e');}
         else {specials=Math.min(100,specials+15);floatText(player.x,player.y-38,'ゲージ +15%','#ffdf85');}
@@ -613,7 +649,7 @@
     }
   }
   function drawShot(b){
-    ctx.save();ctx.translate(b.x,b.y);
+    ctx.save();ctx.translate(b.x,b.y);if(b.giant)ctx.scale(1.5,1.5);
     if(b.type==='chake'){
       ctx.rotate(.42+Math.sin(elapsed*9)*.15);oval(0,0,5,12,'#ffeb72','#e7a954',1.5);line([[0,7],[0,-7]],'#fffef0',1.2);
     }else if(b.type==='coin'){
@@ -650,6 +686,7 @@
     ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.sin(p.t*3)*.18);
     oval(0,0,15,15,'#ffffffc8');
     if(p.type==='meat'||p.type==='fish'){oval(0,0,19,19,'#fff3a4','#df8c6b',2);label(p.type==='meat'?'肉':'魚',0,1,20,'#75425c');}
+    else if(['feather','cheek','awake'].includes(p.type)){oval(0,0,18,18,{feather:'#fff2a0',cheek:'#ffc697',awake:'#e7bdff'}[p.type],'#86609b',2);label({feather:'羽',cheek:'頬',awake:'覚'}[p.type],0,1,18,'#67466d');}
     else if(p.type==='heart')label('♥',0,1,20,'#f16b9b');
     else if(p.type==='power')star(0,0,12,5,5,'#ffc34e');
     else label('✦',0,0,21,'#9564c2');
@@ -664,6 +701,9 @@
     for(let i=0;i<3;i++)label(i<player.hp?'♥':'♡',24+i*24,54,22,i<player.hp?'#ff8fae':'#ffffff77');
     rr(105,49,96,9,5,'#241a4b');rr(105,49,96*specials/100,9,5,'#ffcf70');
     label('必',94,54,10,'#ffdf97');label(`POWER ${power}`,214,54,9,'#ffe7a0','left');
+    const buffs=Object.entries(chakeBuff).filter(([,v])=>v>0).map(([k,v])=>({feather:'羽',cheek:'頬',awake:'覚'}[k])+Math.ceil(v)+'秒').join('・');
+    if(buffs){rr(57,610,276,24,12,'#fff4e9e8');label('ちゃけ '+buffs,195,622,13,'#774a75');}
+    if(warning){rr(20,177,350,35,12,'#fff4d9');label({homing:'追尾名刺！ 横へ誘ってかわそう',spiral:'回転書類！ 弾のすき間へ',boomerang:'戻るネクタイ！ 帰り道にも注意',feint:'フェイント！ 途中で横向きが反転',pincer:'左右から挟み撃ち！ 中央のすき間へ',flash:'眼鏡フラッシュ！ 光の線から離れて'}[warning.pattern],195,195,15,'#9d3565');}
     // Stage time indicator when no boss is on screen.
     if(boss){
       rr(36,83,W-72,18,9,'#463468d6','#f8e6ff',1);
@@ -838,7 +878,7 @@
   });
 
   // Exposed read-only diagnostics let automated browser tests verify real gameplay.
-  Object.defineProperty(window,'nankoStatus',{get:()=>({scene,stage,meatUnlocked,fishTime,encounter,rpg:rpg?.status(),score,hp:player.hp,weapon,shots:bullets.length,enemies:enemies.length,charge:Math.round(specials),boss:boss?.type||null,bossHP:boss?.hp||0,bossPhase:boss?.phase??null,player:{x:player.x,y:player.y},power,stageClock,laser:laser?{...laser}:null,enemyShots:enemyBullets.map(b=>({...b})),foes:enemies.map(e=>({x:e.x,y:e.y,r:e.r})),items:pickups.map(p=>({...p})),bossX:boss?.x??null})});
+  Object.defineProperty(window,'nankoStatus',{get:()=>({scene,stage,chakeBuff:{...chakeBuff},warning:warning?{...warning}:null,meatUnlocked,fishTime,encounter,rpg:rpg?.status(),score,hp:player.hp,weapon,shots:bullets.length,enemies:enemies.length,charge:Math.round(specials),boss:boss?.type||null,bossHP:boss?.hp||0,bossPhase:boss?.phase??null,player:{x:player.x,y:player.y},power,stageClock,laser:laser?{...laser}:null,enemyShots:enemyBullets.map(b=>({...b})),foes:enemies.map(e=>({x:e.x,y:e.y,r:e.r})),items:pickups.map(p=>({...p})),bossX:boss?.x??null})});
   rpg=window.createNankoRPG({ctx,W,H,rr,label,oval,line,drawNanko,drawChake,progress,sfx,startEncounter});
   document.getElementById('talkBtn').addEventListener('click',()=>{if(scene==='rpg')rpg.interact();});
   document.getElementById('rpgSaveBtn').addEventListener('click',()=>{if(scene==='rpg'){rpg.save();rpg.say('ちゃけ','ここまで覚えたよ！ 次もつづきから出勤しよう。');}});
