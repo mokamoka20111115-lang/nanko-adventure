@@ -3,12 +3,12 @@ const {createCanvas}=require('@napi-rs/canvas');
 function boot(storage={}){
  let seed=123456;
  function element(){return {style:{},dataset:{},disabled:false,textContent:'',hidden:false,classList:{add(){},remove(){},toggle(){}},querySelector:()=>null,setAttribute(){},addEventListener(){},getBoundingClientRect(){return {left:0,top:0,width:390,height:660}},setPointerCapture(){}};}
- const nodes={},canvas=createCanvas(390,660);
+ const events={},nodes={},canvas=createCanvas(390,660);
  const get=id=>nodes[id]||(nodes[id]=element());
  nodes.game=Object.assign(element(),{getContext:()=>canvas.getContext('2d'),parentElement:{clientWidth:390,clientHeight:660}});
  const math=Object.create(Math);math.random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  const scope={console,Math:math,document:{getElementById:get,querySelector:()=>null,querySelectorAll:()=>['money','meat','fish'].map(w=>({...element(),dataset:{weapon:w}})),addEventListener(){}},matchMedia:()=>({matches:false}),localStorage:{getItem:k=>storage[k]??null,setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setTimeout(){},SpeechSynthesisUtterance:class{}};
- scope.window={devicePixelRatio:1,addEventListener(){}};vm.createContext(scope);
+ scope.window={devicePixelRatio:1,addEventListener:(n,f)=>events[n]=f};vm.createContext(scope);
  for(const file of ['progress.js','rpg.js'])vm.runInContext(fs.readFileSync(file,'utf8'),scope);
  let source=fs.readFileSync('game.js','utf8');
  source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  window.test={begin,tick,render,special,togglePause,changeWeapon,damagePlayer,spawnPickup,enemyFire,bossDefeated,summonBoss,freshStart,startRPG,startEncounter,killed,
@@ -17,7 +17,7 @@ function boot(storage={}){
   frame:dt=>{if(scene!=='paused')tick(dt);},boss:()=>({...boss}),rpg:()=>rpg};
   updateButtons();\n  requestAnimationFrame(frame);`);
  vm.runInContext(source,scope);
- return {game:scope.window.test,status:()=>scope.window.nankoStatus,progress:scope.window.NankoProgress,storage,nodes};
+ return {game:scope.window.test,status:()=>scope.window.nankoStatus,progress:scope.window.NankoProgress,storage,nodes,events};
 }
 const b=boot(),{game:g,status:s}=b;
 const step=seconds=>{for(let n=0;n<Math.ceil(seconds*60);n++)g.frame(1/60);};
@@ -40,5 +40,6 @@ assert(b.progress.get().rpgUnlocked);g.begin();assert.equal(s().scene,'rpg');g.r
 const reloaded=boot(b.storage);reloaded.game.begin();assert.equal(reloaded.status().scene,'rpg');
 g.startEncounter();assert.equal(s().bossHP,600);g.set({hp:1,invuln:0});g.damagePlayer();g.begin();assert(s().encounter);g.set({bossHP:0});step(.02);assert.equal(s().scene,'rpg');assert(s().rpg.helped);
 g.freshStart();assert.equal(s().stage,0);assert(!s().meatUnlocked);assert(!b.progress.get().rpgUnlocked);
+const idle=boot();idle.progress.write({rpgUnlocked:true,chapter:'shooting',stage:2});idle.events.blur();assert.equal(idle.progress.get().chapter,'shooting');assert.equal(idle.progress.get().stage,2);
 const corrupt=boot({nanko_progress_v1:'{"version":1,"stage":999,"power":-2,"rpg":{"x":null}}'});assert.equal(corrupt.progress.get().stage,2);assert.equal(corrupt.progress.get().power,1);
 console.log('PASS: locks, drops, timed fish, pause, 3 boss HP/phases, each stage retry/reload, RPG unlock/reload, encounter loss/win return, fresh start, corrupt save');

@@ -151,7 +151,7 @@
   }
   function startRPG(){
     if(!progress.get().rpgUnlocked)return;
-    ensureAudio();scene='rpg';encounter=false;hideScreen();setMode(true);keys.clear();pointerActive=false;
+    ensureAudio();scene='rpg';encounter=false;hideScreen();els.toast.classList.remove('show');toastTimer=0;setMode(true);keys.clear();pointerActive=false;
     progress.write({chapter:'rpg'});rpg.enter();els.pause.disabled=false;updateButtons();
   }
   function startEncounter(){
@@ -827,7 +827,7 @@
   // Only the on-screen pause button or P key should show "ひとやすみ".
   function clearInterruptedInput() {
     keys.clear();
-    if(rpg)rpg.stop();
+    if(rpg&&(scene==='rpg'||(scene==='paused'&&resumeScene==='rpg')))rpg.stop();
     pointerActive=false;
     pointerId=null;
     touchOrigin=null;

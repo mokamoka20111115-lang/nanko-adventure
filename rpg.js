@@ -11,13 +11,13 @@ window.createNankoRPG = function(api){
   const mission=document.getElementById('rpgMission');
   const statusText=()=>state.arrived?'第2章クリア！ 今日もお仕事がんばろう！':!state.pass?'① 公園で社員証を見つけよう':!state.lunch?'② おべんとう屋さんに話しかけよう':!state.helped?'③ 会社前の受付さんに話しかけよう':'④ ニッショーの玄関を調べよう';
   function save(){const ok=progress.write({rpg:{...state},chapter:'rpg'});mission.textContent=statusText()+(ok?'':'（保存できません）');return ok;}
-  function say(name,text){path=[];dialog={name,text};mission.textContent=name+'：'+text;sfx('power');}
-  function enter(){state=progress.get().rpg;if(solid(state.x,state.y)){state.x=195;state.y=550;}bird={x:state.x-25,y:state.y+23};path=[];saveClock=0;mission.textContent=statusText();if(!state.pass&&!state.lunch&&!state.arrived)say('ちゃけ','第2章！ ニッショーへ出勤だ！ 社員証とおべんとう、忘れてない？');}
+  function say(name,text){path=[];dialog={name,text};mission.textContent=statusText();document.getElementById('talkBtn').textContent='つづける';sfx('power');}
+  function enter(){state=progress.get().rpg;if(solid(state.x,state.y)){state.x=195;state.y=550;}bird={x:state.x-25,y:state.y+23};path=[];saveClock=0;mission.textContent=statusText();document.getElementById('talkBtn').textContent='話す・調べる';if(!state.pass&&!state.lunch&&!state.arrived)say('ちゃけ','第2章！ ニッショーへ出勤だ！ 社員証とおべんとう、忘れてない？');}
   function npc(){return [{x:195,y:470,name:'おさんぽさん',color:'#b5a5d9',act:()=>say('おさんぽさん','おはよう！ 社員証が公園の左下でキラキラしていたよ。タップで歩いて、近くで「調べる」！')},
     {x:85,y:415,name:'おべんとう屋さん',color:'#e7a4a1',act:()=>{if(!state.pass){say('おべんとう屋さん','会社に行くなら社員証を先に探してね！ 公園の左下に落ちていたよ。');return;}if(!state.lunch){state.lunch=true;save();say('おべんとう屋さん','うるふぎゃんぐ弁当、できたよ！ ちゃけには小さな粟のおまけ！');}else say('おべんとう屋さん','会社は右上。気をつけていってらっしゃい！');}},
     {x:305,y:265,name:'受付さん',color:'#9bc8b5',act:()=>{if(!state.pass||!state.lunch){say('受付さん','出勤の準備はできた？ 社員証とおべんとうを持ってきてね。');return;}if(state.helped){say('受付さん','ありがとう！ 玄関はすぐ上。近くで調べてね！');return;}say('受付さん','書類が風で大暴れ！ 次に話しかけるとシューティングで片づけられるよ。');dialog.next=()=>{dialog=null;path=[];save();startEncounter();};}}];}
   function interact(){
-    if(dialog){const next=dialog.next;dialog=null;mission.textContent=statusText();if(next)next();return;}
+    if(dialog){const next=dialog.next;dialog=null;mission.textContent=statusText();document.getElementById('talkBtn').textContent='話す・調べる';if(next)next();return;}
     const objects=npc();
     if(!state.pass)objects.push({x:65,y:535,name:'社員証',act:()=>{state.pass=true;save();say('なんこ','社員証みーつけた！ 次はおべんとうを受け取ろう！');}});
     objects.push({x:307,y:235,name:'会社の玄関',act:()=>{if(!state.helped){say('ちゃけ','まずは受付さんに話しかけよう！');return;}state.arrived=true;save();say('なんこ','ニッショーに到着！ おはようございまーす！\nちゃけ「出勤ミッション、大成功！」\n第2章クリア！ 街はこのまま散歩できるよ。');}});
