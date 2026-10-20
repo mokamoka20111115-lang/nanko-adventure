@@ -7,6 +7,7 @@
   window.addEventListener('load',async()=>{
     try{
       const reg=await navigator.serviceWorker.register('./service-worker.js',{scope:'./',updateViaCache:'none'});
+      reg.update().catch(()=>{});
       await navigator.serviceWorker.ready;
       status.textContent='オフライン準備OK';
       reg.addEventListener('updatefound',()=>{
