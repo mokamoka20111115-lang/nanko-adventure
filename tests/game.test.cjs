@@ -65,3 +65,8 @@ for(let i=0;i<5000;i++){dg.clearItems();dg.killed({x:100,y:100,points:1});for(co
 assert(fishDrops>85&&fishDrops<160);assert(birdDrops.awake>60&&birdDrops.awake<140);
 assert(birdDrops.feather>170&&birdDrops.feather<330);assert(birdDrops.cheek>170&&birdDrops.cheek<330);
 console.log('DROP SAMPLE (5000 locked-weapon kills)',{fishDrops,birdDrops});
+const w=boot(),wg=w.game;wg.begin();wg.set({invuln:999});
+for(let i=0;i<120;i++)wg.shoot();const coin=wg.bullets().find(b=>b.bounce>0);assert(coin);coin.x=389;coin.vx=110;wg.frame(.02);assert.equal(coin.bounce,1);assert(coin.vx<0);
+wg.spawnPickup(w.status().player.x,w.status().player.y,'meat');wg.frame(.01);for(let i=0;i<100;i++)wg.shoot();assert(wg.bullets().some(b=>b.type==='meat'&&b.giant&&b.splash===85));
+wg.spawnPickup(w.status().player.x,w.status().player.y,'fish');wg.frame(.01);for(let i=0;i<30;i++)wg.shoot();assert(wg.bullets().some(b=>b.type==='fish'&&b.pierce===2&&b.spin>=0));
+console.log('PASS: bouncing coin, giant splash meat, rotating piercing fish');

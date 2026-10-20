@@ -815,7 +815,7 @@
   const versionTarget=document.querySelector('.install-tip');
   if(versionTarget){
     const version=document.createElement('span');
-    version.textContent=' · 第2章対応 v1';
+    version.textContent=' · 第2次バランス v2';
     versionTarget.appendChild(version);
   }
   els.sound.addEventListener('click',()=>{
