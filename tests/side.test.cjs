@@ -38,7 +38,7 @@ const {chromium}=require('playwright'),assert=require('assert/strict');
   for(const k of pressed)if(!next.includes(k))await p.keyboard.up(k);for(const k of next)if(!pressed.includes(k))await p.keyboard.down(k);pressed=next;
   await p.clock.runFor(150);
  }
- assert.equal(await p.evaluate(()=>nankoStatus.scene),'sideWon');assert.equal(areas.size,3);assert.equal(bosses.size,2);
+ assert.equal(await p.evaluate(()=>nankoStatus.scene),'sideWon');assert(await p.locator('#chapter4Btn').isVisible());assert.equal(areas.size,3);assert.equal(bosses.size,2);
  await p.screenshot({path:'tests/chapter3-clear.png'});
  const saved=await p.evaluate(()=>JSON.parse(localStorage.getItem('nanko_progress_v1')));assert(saved.side.clear&&saved.side.transfer&&saved.rpg.arrived&&saved.rpgUnlocked);assert.equal(saved.stage,2);
  await c.setOffline(true);await p.reload();await p.locator('#mainBtn').click();assert.equal(await p.evaluate(()=>nankoStatus.scene),'side');

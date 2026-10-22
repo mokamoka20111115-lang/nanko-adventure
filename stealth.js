@@ -146,7 +146,7 @@ window.createNankoStealth=function(api){
   for(const b of objects()){rr(b.x+3,b.y+6,b.w,b.h,8,'#5b526520');rr(b.x,b.y,b.w,b.h,8,b.color,'#fff8ef',2);
    if(b.name==='書棚'){for(let y=b.y+8;y<b.y+b.h-8;y+=22)for(let i=0;i<3;i++)rr(b.x+4+i*8,y,6,17,1,['#df8fa3','#eac790','#8db8c2'][i]);}
    else{label(b.name,b.x+b.w/2,b.y+22,b.w<80?12:14,'#66506e');if(b.name==='店長のデスク'){rr(b.x+15,b.y+33,78,13,3,'#eed7b6','#997f78',1);oval(b.x+54,b.y+39,3,2,'#9c7b69');}else rr(b.x+12,b.y+32,b.w-24,Math.max(8,b.h-44),4,'#ffffff55');}}
-  if(!state.day){vision();for(const h of hiding){oval(h.x,h.y,18,11,'#b5e5ee88','#6dabc6',2);label('隠',h.x,h.y+1,12,'#517b9e');}manager();rr(162,603,66,14,4,'#9ab0c4');label('出口',195,597,14,'#705f8f');}
+  if(!state.day){rr(198,215,23,16,4,'#d6a58d');oval(203,206,12,16,'#98bc96',null,1,-.4);oval(216,201,10,17,'#adcda4',null,1,.4);vision();for(const h of hiding){oval(h.x,h.y,18,11,'#b5e5ee88','#6dabc6',2);label('隠',h.x,h.y+1,12,'#517b9e');}manager();rr(162,603,66,14,4,'#9ab0c4');label('出口',195,597,14,'#705f8f');}
   const npcs=state.day?[{x:75,y:375,c:'#e5a0b6'},{x:310,y:470,c:'#9cabc7'}]:[{x:85,y:550,c:'#b0a0cf'}];
   for(const n of npcs){rr(n.x-10,n.y-15,20,26,6,n.c);oval(n.x,n.y-27,12,14,'#ffe0bd');oval(n.x,n.y-37,12,6,'#73607c');label('…',n.x,n.y-53,16,'#846b97');}
   if(path.length){const q=path.at(-1);oval(q.x,q.y,9,4,'#fff9');}
@@ -160,7 +160,7 @@ window.createNankoStealth=function(api){
   label('架空の割引券です・実際のお店では使えません',195,644,10,'#846c90');
   if(dialog){rr(10,440,370,188,16,'#fff9ef','#dc9caf',3);label(dialog.name,26,469,18,'#bd6b91','left');wrapped(dialog.text,26,497,336,16);label('「つづける」で閉じる',195,610,12,'#a482a3');}
   if(transition){rr(12,230,366,180,20,'#fff6e8','#e7a0b6',3);label('脱出成功！',195,280,27,'#ba688b');label('翌出勤日……',195,350,25,'#816293');}
-  if(ending){rr(12,118,366,488,22,'#fff3df','#e5a0bc',4);label('トンテキ、いただきまーす！',195,155,22,'#b66887');tonteki();drawNanko(130,480+Math.sin(ending*9)*2,1);drawChake(272,478,.85);const bite=(Math.sin(ending*4)+1)/2;oval(158-bite*25,470-bite*14,8,5,'#ae6d46');line([[170,477],[150-bite*22,458]],'#856149',2);label('やったーー！ トンテキだーー！',195,540,18,'#a66185');label('ちゃけ「頑張ったね、なんこ！」',195,571,16,'#947096');}
+  if(ending){rr(12,118,366,488,22,'#fff3df','#e5a0bc',4);label('トンテキ、いただきまーす！',195,155,22,'#b66887');label('幻の割引券を使った！',195,184,14,'#9d7894');tonteki();drawNanko(130,480+Math.sin(ending*9)*2,1);drawChake(272,478,.85);const bite=(Math.sin(ending*4)+1)/2;oval(158-bite*25,470-bite*14,8,5,'#ae6d46');line([[170,477],[150-bite*22,458]],'#856149',2);label('やったーー！ トンテキだーー！',195,540,18,'#a66185');label('ちゃけ「頑張ったね、なんこ！」',195,571,16,'#947096');}
   ctx.restore();
  }
  return{enter,tick,render,target,interact,hide,toggleSneak,search,closeDrawer,stop,save,ui,status:()=>({...(state||{}),player:p?{...p}:null,guard:guard?{...guard,route:guard.route.map(q=>({...q}))}:null,alert,sneak,hidden,dialog:dialog?.text||null,drawer:drawer?{...drawer,opened:[...drawer.opened]}:null,transition,ending,caught,path:path.map(q=>({...q})),bubble:{...bubble}})};

@@ -1,7 +1,7 @@
 // Installed previous PWA -> current build -> offline, preserving local storage.
 const {chromium}=require('playwright'),fs=require('fs'),http=require('http'),assert=require('assert/strict'),{execFileSync}=require('child_process');
 (async()=>{
- const old={};for(const f of ['game.js','index.html','service-worker.js','pwa.js'])old[f]=execFileSync('git',['show','0b03296:'+f]);
+ const old={};for(const f of ['game.js','index.html','service-worker.js','pwa.js','progress.js','rpg.js','side.js','style.css'])old[f]=execFileSync('git',['show','89ae708:'+f]);
  let latest=false;
  const server=http.createServer((req,res)=>{
   const path=decodeURIComponent(new URL(req.url,'http://localhost').pathname).slice(1)||'index.html';
@@ -22,12 +22,12 @@ const {chromium}=require('playwright'),fs=require('fs'),http=require('http'),ass
   latest=true;
   // Use the versioned release link, also usable by existing installed-PWA users.
   await p.goto(url+'/?v=chapter-4');
-  await p.waitForFunction(async()=>{const k=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return k.includes('nanko-adventure-chapter4-v1')&&!k.includes('nanko-adventure-rpg-v1')&&r.active.state==='activated'&&r.active===navigator.serviceWorker.controller;},null,{timeout:15000});
-  await p.close();p=await c.newPage();p.on('pageerror',e=>console.error('UPDATE PAGE ERROR',e.message));await p.goto(url+'/');
-  console.log('UPDATED PAGE',await p.locator('.install-tip').textContent(),await p.locator('script').evaluateAll(es=>es.map(e=>e.src)));
+  await p.waitForFunction(async()=>{const k=await caches.keys(),r=await navigator.serviceWorker.getRegistration();return k.includes('nanko-adventure-chapter4-v1')&&!k.includes('nanko-adventure-chapter3-v1')&&r.active.state==='activated'&&r.active===navigator.serviceWorker.controller;},null,{timeout:15000});
+  await p.close();p=await c.newPage();p.on('pageerror',e=>{throw e;});await p.goto(url+'/');
+  await p.waitForFunction(()=>document.querySelector('.install-tip').textContent.includes('第4章対応 v4'));
   assert((await p.locator('.install-tip').textContent()).includes('第4章対応 v4'));
   await c.setOffline(true);await p.reload();await p.locator('#mainBtn').click();await p.waitForTimeout(200);
   const state=await p.evaluate(()=>nankoStatus);assert.equal(state.scene,'playing');assert.equal(state.stage,1);assert.equal(state.meatUnlocked,true);
-  console.log('PASS: installed v1 -> chapter4, root URL updated, saved stage/weapon retained, offline game starts');
+  console.log('PASS: installed chapter3 -> chapter4, root URL updated, saved stage/weapon retained, offline game starts');
  }finally{if(browser)await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
