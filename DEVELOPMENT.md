@@ -23,8 +23,17 @@
 - 既存コードのBGMを第3章でも共有。料理は自作Canvas描画、食べるアニメーションあり。
 - `git diff --check` PASS。作業チェックポイント `work/chapter3-20261022`（21544263）。
 
+## GitHub Pages公開完了
+- 公開コード: `f213ae0f39372ae8c2403f8edc49ceb4a1b81aaf`。mainへ保存済み。
+- Pages実行 `39701892981`: completed / success。
+- 公開URL: https://mokamoka20111115-lang.github.io/nanko-adventure/?v=chapter-3
+- 公開配布物 index.html/game.js/side.js/progress.js/service-worker.js/style.css は検証済みソースとバイト単位で一致。
+- 公開ブラウザで「第3章対応 v3」「オフライン準備OK」、ゲーム開始と自動射撃を確認。`tests/chapter3-public.jpg` に記録。
+- `tests/chapter3-bank.png` はローカルのモバイル実ブラウザ試遊記録。
+- この公開記録の追記は `[skip ci]` で不要な再配布を避ける。ゲームの配布物に変更なし。
+
 ## 次の確認・未確認
-- コードと検証は完了。GitHub Pages反映の結果は下記に追記する。
+- コード・検証・GitHub Pages反映まで完了。次回は下記の公開コミットから再開する。
 - iPhone実機のSafari/ホーム画面からの起動/日本語音声は未確認。Chromiumのモバイル・タッチ検証は実機検証の代わりではない。
 - 第4章は未制作。再利用はside.jsのエリア定義と章移行の拡張から。
 - 追加購入・有料API・有料素材・有料クラウドなし。請求明細は確認していない。
