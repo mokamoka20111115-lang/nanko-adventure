@@ -9,7 +9,12 @@ function boot(storage={}){
  const math=Object.create(Math);math.random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  const scope={console,Math:math,document:{getElementById:get,querySelector:()=>null,querySelectorAll:()=>['money','meat','fish'].map(w=>({...element(),dataset:{weapon:w}})),addEventListener(){}},matchMedia:()=>({matches:false}),localStorage:{getItem:k=>storage[k]??null,setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setTimeout(){},SpeechSynthesisUtterance:class{}};
  scope.window={devicePixelRatio:1,addEventListener:(n,f)=>events[n]=f};vm.createContext(scope);
- for(const file of ['progress.js','rpg.js','side.js'])vm.runInContext(fs.readFileSync(file,'utf8'),scope);
+ for(const file of ['progress.js','rpg.js','side.js']){
+  let src=fs.readFileSync(file,'utf8');
+  // Fixture access exists only in this VM; never shipped in the game.
+  if(file==='side.js')src=src.replace('return{enter,tick,',`return{fixture:{collect,fire,summon,hurt,set:v=>{if('hp'in v)p.hp=v.hp;if('invuln'in v)p.invuln=v.invuln;if('bossHP'in v)boss.hp=v.bossHP;if('time'in v)time=v.time;},clear:()=>{foes=[];enemyShots=[];items=[];obstacles=[];boss=null;warning=null;beam=null;}},enter,tick,`);
+  vm.runInContext(src,scope);
+ }
  let source=fs.readFileSync('game.js','utf8');
  source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  window.test={begin,tick,render,special,togglePause,changeWeapon,damagePlayer,spawnPickup,enemyFire,bossDefeated,summonBoss,freshStart,startRPG,startEncounter,startSide,side:()=>side,killed,shoot,hitBullet,spawnEnemy,
   bullets:()=>bullets,enemies:()=>enemies,clearItems:()=>{pickups=[];enemies=[];},
@@ -77,3 +82,21 @@ const ch=boot(legacy);assert.equal(ch.progress.get().stage,2);assert(ch.progress
 const resumed=boot(legacy);resumed.game.begin();assert.equal(resumed.status().scene,'side');assert.equal(resumed.progress.get().stage,2);assert(resumed.progress.get().rpg.arrived);
 const locked=boot();locked.game.startSide();assert.equal(locked.status().scene,'title');
 console.log('PASS: v1 save migration, Chapter 3 unlock gate, rightward fire, pause, reload, earlier chapter progress retained');
+
+// Horizontal-mode state contracts: timer caps, retries/checkpoints, patterns.
+const h=boot(JSON.parse(JSON.stringify(legacy))),hg=h.game;hg.startSide();const hs=()=>h.status().side,fx=hg.side().fixture;
+for(const k of ['feather','cheek','awake','fish'])fx.collect(k);
+assert.equal(hs().fish,30);assert.equal(hs().buffs.feather,45);assert.equal(hs().buffs.awake,20);
+hg.frame(.6);assert(hs().shots.filter(b=>b.type==='chake'&&b.homing&&b.damage===22).length>=3);
+fx.collect('cheek');assert.equal(hs().buffs.cheek,45);hg.togglePause();hg.frame(10);assert.equal(hs().buffs.cheek,45);hg.togglePause();
+for(let n=0;n<2800;n++){fx.clear();fx.set({time:0,invuln:999});hg.frame(1/60);}
+assert.equal(hs().fish,0);assert.equal(hs().weapon,'money');assert.equal(hs().buffs.feather,0);assert.equal(hs().buffs.cheek,0);assert.equal(hs().buffs.awake,0);
+for(const a of [0,1,2]){
+ h.progress.write({side:{...h.progress.get().side,area:a}});hg.startSide();fx.set({hp:1,invuln:0});fx.hurt();assert.equal(h.status().scene,'sideLost');hg.begin();assert.equal(hs().area,a);assert.equal(hs().hp,5);assert.equal(hs().fish,0);
+ const reload=boot(h.storage);reload.game.begin();assert.equal(reload.status().side.area,a);
+}
+h.progress.write({side:{...h.progress.get().side,area:0}});hg.startSide();fx.set({time:32});hg.frame(.1);assert.equal(h.progress.get().side.area,1);hg.frame(2.1);assert.equal(hs().boss.max,3000);
+for(const [ratio,phase] of [[.9,0],[.5,1],[.2,2]]){fx.set({bossHP:3000*ratio});hg.frame(.01);assert.equal(hs().boss.phase,phase);}
+for(const pattern of ['fan','ring','beam','homing','wave','fast','feint','pincer']){fx.fire(pattern);if(pattern==='beam')assert(hs().beam.time>1);else assert(hs().enemyShots.some(b=>b.motion===pattern));}
+hg.render();fx.set({bossHP:0,invuln:999});hg.frame(.01);assert(h.progress.get().side.transfer);assert.equal(h.progress.get().side.area,2);hg.frame(3.1);fx.set({time:36});hg.frame(.01);assert.equal(hs().boss.max,6000);fx.set({bossHP:0});hg.frame(.01);assert(h.progress.get().side.clear);hg.render();hg.frame(5.1);assert.equal(h.status().scene,'sideWon');assert(h.progress.get().rpg.arrived);
+console.log('PASS: Chapter 3 buffs/caps/expiry/pause, every area death/reload, immediate checkpoints, 2 boss HP/phases, 8 patterns, saved transfer and ramen clear');

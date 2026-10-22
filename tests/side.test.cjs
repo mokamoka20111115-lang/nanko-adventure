@@ -13,9 +13,11 @@ const {chromium}=require('playwright'),assert=require('assert/strict');
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...pt,id:1}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:pt.x+25,y:pt.y-40,id:1}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  const after=await p.evaluate(()=>nankoStatus.side.player);assert(after.x>before.x&&after.y<before.y);assert.equal(await p.evaluate(()=>nankoStatus.scene),'side');
  await p.locator('#pauseBtn').click();assert.equal(await p.evaluate(()=>nankoStatus.scene),'side');
- await p.clock.install();const areas=new Set(),bosses=new Set();let pressed=[],lastArea=-1;
+ await p.clock.install();const areas=new Set(),bosses=new Set();let pressed=[],lastArea=-1,bankShot=false,ramenShot=false;
  for(let i=0;i<2200;i++){
   const all=await p.evaluate(()=>nankoStatus),s=all.side;areas.add(s.area);if(s.boss)bosses.add(s.area);
+  if(s.boss&&s.area===1&&s.boss.t>4&&!bankShot){await p.screenshot({path:'tests/chapter3-bank.png'});bankShot=true;}
+  if(s.ending>1&&!ramenShot){await p.screenshot({path:'tests/chapter3-ramen.png'});ramenShot=true;}
   if(all.scene==='sideWon'){console.log('CHAPTER3 CLEAR',s.score,Math.round(i*.15),[...areas],[...bosses]);break;}
   assert.notEqual(all.scene,'sideLost','Normal-input autoplayer lost');
   if(s.area!==lastArea){console.log('AREA',s.area+1,'HP',s.hp);lastArea=s.area;}

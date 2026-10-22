@@ -17,7 +17,7 @@ window.createNankoSide=function(api){
   notify(area===0?'銀行に振り込みに行かなきゃ！\n終わったらエビラーメンだー！':area===1?'架空のATM登場！\nゲーム内の振り込みだよ': '浜木綿へ急げ！\n幻のエビラーメンまであと少し！',3);
   if(area===1)summon();
  }
- function summon(){foes=[];enemyShots=[];obstacles=[];const hp=area===1?1800:3000;boss={x:310,y:330,r:43,hp,max:hp,t:0,clock:2.2,phase:0,pattern:0};sfx('warn');}
+ function summon(){foes=[];enemyShots=[];obstacles=[];const hp=area===1?3000:6000;boss={x:310,y:330,r:43,hp,max:hp,t:0,clock:2.2,phase:0,pattern:0};sfx('warn');}
  function change(w){if(w==='meat'&&!progress.get().meat||w==='fish'&&fish<=0)return;if(!['money','meat','fish'].includes(w))return;if(fish>0&&w!=='fish')previous=w;weapon=w;shot=Math.min(shot,.08);}
  function hurt(){if(p.invuln>0||transition||ending)return;p.hp--;p.invuln=2;sfx('hit');if(p.hp<=0){stop();finish(false,score);}}
  function special(){if(charge<100||transition||ending)return;charge=0;fx=2.2;enemyShots=[];beam=null;warning=null;p.invuln=2.5;for(const e of foes)e.hp-=150;if(boss)boss.hp-=320;speakSpecial();sfx('boom');}
@@ -119,7 +119,8 @@ window.createNankoSide=function(api){
   if(warning){rr(12,160,366,42,12,'#fff5dc');label({beam:'予告：大型ビーム！ 線を見てよけよう',homing:'追尾用紙！ 引きつけてかわそう',pincer:'上下から挟撃！ 左側に余裕を',fast:'高速請求書！ 横のすき間へ',wave:'蛇行弾！ 波のすき間を見よう',feint:'方向反転！ 弾の動きを見て',fan:'お札ばらまき！ 広がる弾に注意',ring:'回転コイン！ すき間をぬけよう'}[warning.pattern],195,183,14,'#9a4c72');}
   const text=Object.entries(buffs).filter(([,v])=>v>0).map(([k,v])=>({feather:'羽',cheek:'頬',awake:'覚'}[k])+Math.ceil(v)+'秒').join(' ');if(text){rr(40,606,310,24,10,'#fff');label('ちゃけ '+text,195,619,14,'#815274');}
   if(fx>0){ctx.globalAlpha=.3;oval(p.x,p.y,(2.3-fx)*360,(2.3-fx)*360,'#fff5ac');ctx.globalAlpha=1;if(fx>1.3)drawNanko(195,360,3,true,true);label('むかちゅくーーー！！',195,420,25,'#fff','center','#bc5686');}
-  if(ending){rr(18,140,354,425,22,'#fff4df','#f3a6bf',4);label('浜木綿に到着！',195,182,26,'#b86d8b');ramen(195,320,2);drawNanko(125,455,1);drawChake(270,450,.9);label('やったーー！ エビラーメンだー！',195,514,18,'#965776');label('ちゃけ「おめでとうなんこ！」',195,544,16,'#9f6d8f');}
+  if(ending){rr(18,140,354,425,22,'#fff4df','#f3a6bf',4);label('浜木綿に到着！',195,182,26,'#b86d8b');ramen(195,320,2);drawNanko(125,455+Math.sin(ending*8)*2,1);drawChake(270,450,.9);
+   const bite=(Math.sin(ending*4)+1)/2;oval(152-bite*22,450-bite*20,9,5,'#ff9c72','#fff2cc',1.5);line([[165,455],[146-bite*20,436]],'#916448',2);label('もぐもぐ♪',230,395,16,'#b36c8c');label('やったーー！ エビラーメンだー！',195,514,18,'#965776');label('ちゃけ「おめでとうなんこ！」',195,544,16,'#9f6d8f');}
   label('架空のお話・公式ゲームではありません',195,650,10,'#786885');ctx.restore();
  }
  return{enter,tick,render,change,special,controls,touch,stop,status:()=>({area,time,score,weapon,fish,power,charge,hp:p?.hp,player:p?{...p}:null,buffs:{...buffs},boss:boss?{...boss}:null,warning,beam,shots:shots.map(b=>({...b,hits:undefined})),enemyShots:enemyShots.map(b=>({...b})),items:items.map(i=>({...i})),foes:foes.map(e=>({...e})),obstacles:obstacles.map(o=>({...o})),transition,ending})};
