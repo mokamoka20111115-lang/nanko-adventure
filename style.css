@@ -25,3 +25,6 @@ canvas{object-fit:contain;background:#b5dff2}
 .game-wrap{display:flex;align-items:center;justify-content:center;background:#b5dff2}canvas{flex:none}
 
 [hidden]{display:none!important}.secondary-btn{border:1px solid #b79ac4;background:#fff5fb;color:#69426e;border-radius:12px;padding:9px 12px;font-weight:800;margin-top:10px}.weapon:disabled{opacity:.55;cursor:not-allowed}.rpg-buttons{display:flex;gap:10px;align-items:center}.rpg-buttons .start-btn{flex:1;font-size:16px}.rpg-buttons .secondary-btn{margin:0;min-height:46px}.mission{font-size:13px;line-height:1.4;margin:0 0 8px;color:#fff4c2}.screen-box{max-height:100%;overflow-y:auto}#newConfirm button{margin:5px}.weapon small{opacity:1}
+
+#chapterMenu button{display:block;width:100%;margin:9px 0;padding:10px;}
+#chapter3Btn{width:100%;padding:8px;margin-top:6px;}

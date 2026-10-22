@@ -24,7 +24,7 @@ jobs:
       - name: Prepare static game only
         run: |
           mkdir _site
-          cp index.html style.css game.js progress.js rpg.js pwa.js manifest.webmanifest service-worker.js _site/
+          cp index.html style.css game.js side.js progress.js rpg.js pwa.js manifest.webmanifest service-worker.js _site/
           cp -r icons assets _site/
       - uses: actions/upload-pages-artifact@v3
         with:

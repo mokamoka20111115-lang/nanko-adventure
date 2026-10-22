@@ -9,9 +9,9 @@ function boot(storage={}){
  const math=Object.create(Math);math.random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  const scope={console,Math:math,document:{getElementById:get,querySelector:()=>null,querySelectorAll:()=>['money','meat','fish'].map(w=>({...element(),dataset:{weapon:w}})),addEventListener(){}},matchMedia:()=>({matches:false}),localStorage:{getItem:k=>storage[k]??null,setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setTimeout(){},SpeechSynthesisUtterance:class{}};
  scope.window={devicePixelRatio:1,addEventListener:(n,f)=>events[n]=f};vm.createContext(scope);
- for(const file of ['progress.js','rpg.js'])vm.runInContext(fs.readFileSync(file,'utf8'),scope);
+ for(const file of ['progress.js','rpg.js','side.js'])vm.runInContext(fs.readFileSync(file,'utf8'),scope);
  let source=fs.readFileSync('game.js','utf8');
- source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  window.test={begin,tick,render,special,togglePause,changeWeapon,damagePlayer,spawnPickup,enemyFire,bossDefeated,summonBoss,freshStart,startRPG,startEncounter,killed,shoot,hitBullet,spawnEnemy,
+ source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  window.test={begin,tick,render,special,togglePause,changeWeapon,damagePlayer,spawnPickup,enemyFire,bossDefeated,summonBoss,freshStart,startRPG,startEncounter,startSide,side:()=>side,killed,shoot,hitBullet,spawnEnemy,
   bullets:()=>bullets,enemies:()=>enemies,clearItems:()=>{pickups=[];enemies=[];},
   cheer:()=>({life:cheerLife,clock:cheerClock,index:cheerIndex}),
   set:(v)=>{if('stage'in v)stage=v.stage;if('clock'in v)stageClock=v.clock;if('charge'in v)specials=v.charge;if('hp'in v)player.hp=v.hp;if('invuln'in v)player.invuln=v.invuln;if('bossHP'in v)boss.hp=v.bossHP;},
@@ -70,3 +70,10 @@ for(let i=0;i<120;i++)wg.shoot();const coin=wg.bullets().find(b=>b.bounce>0);ass
 wg.spawnPickup(w.status().player.x,w.status().player.y,'meat');wg.frame(.01);for(let i=0;i<100;i++)wg.shoot();assert(wg.bullets().some(b=>b.type==='meat'&&b.giant&&b.splash===85));
 wg.spawnPickup(w.status().player.x,w.status().player.y,'fish');wg.frame(.01);for(let i=0;i<30;i++)wg.shoot();assert(wg.bullets().some(b=>b.type==='fish'&&b.pierce===2&&b.spin>=0));
 console.log('PASS: bouncing coin, giant splash meat, rotating piercing fish');
+
+// Old saves gain Chapter 3 fields without losing RPG or shooting progress.
+const legacy={nanko_progress_v1:JSON.stringify({version:1,stage:2,meat:true,power:3,score:4000,rpgUnlocked:true,chapter:'rpg',rpg:{x:307,y:235,pass:true,lunch:true,helped:true,arrived:true}})};
+const ch=boot(legacy);assert.equal(ch.progress.get().stage,2);assert(ch.progress.get().rpg.arrived);assert.equal(ch.progress.get().side.area,0);ch.game.startSide();assert.equal(ch.status().scene,'side');assert.equal(ch.progress.get().chapter,'side');ch.game.tick(.1);assert(ch.status().side.shots.some(b=>b.vx>0));ch.game.togglePause();const st=ch.status().side.time;ch.game.frame(2);assert.equal(ch.status().side.time,st);ch.game.togglePause();
+const resumed=boot(legacy);resumed.game.begin();assert.equal(resumed.status().scene,'side');assert.equal(resumed.progress.get().stage,2);assert(resumed.progress.get().rpg.arrived);
+const locked=boot();locked.game.startSide();assert.equal(locked.status().scene,'title');
+console.log('PASS: v1 save migration, Chapter 3 unlock gate, rightward fire, pause, reload, earlier chapter progress retained');
