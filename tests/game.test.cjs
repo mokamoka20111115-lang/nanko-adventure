@@ -9,14 +9,15 @@ function boot(storage={}){
  const math=Object.create(Math);math.random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  const scope={console,Math:math,document:{getElementById:get,querySelector:()=>null,querySelectorAll:()=>['money','meat','fish'].map(w=>({...element(),dataset:{weapon:w}})),addEventListener(){}},matchMedia:()=>({matches:false}),localStorage:{getItem:k=>storage[k]??null,setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},requestAnimationFrame(){},setTimeout(){},SpeechSynthesisUtterance:class{}};
  scope.window={devicePixelRatio:1,addEventListener:(n,f)=>events[n]=f};vm.createContext(scope);
- for(const file of ['progress.js','rpg.js','side.js']){
+ for(const file of ['progress.js','rpg-nav.js','rpg.js','side.js','stealth.js']){
   let src=fs.readFileSync(file,'utf8');
   // Fixture access exists only in this VM; never shipped in the game.
   if(file==='side.js')src=src.replace('return{enter,tick,',`return{fixture:{collect,fire,summon,hurt,set:v=>{if('hp'in v)p.hp=v.hp;if('invuln'in v)p.invuln=v.invuln;if('bossHP'in v)boss.hp=v.bossHP;if('time'in v)time=v.time;},clear:()=>{foes=[];enemyShots=[];items=[];obstacles=[];boss=null;warning=null;beam=null;}},enter,tick,`);
+  if(file==='stealth.js')src=src.replace('return{enter,tick,',`return{fixture:{solid,visible,lineClear,ai,makeNoise,set:v=>{if(v.player)p={...v.player};if(v.guard)guard={...guard,...v.guard};if('hidden'in v)hidden=v.hidden;if('invuln'in v)invuln=v.invuln;if('alert'in v)alert=v.alert;if('dialog'in v)dialog=v.dialog;}},enter,tick,`);
   vm.runInContext(src,scope);
  }
  let source=fs.readFileSync('game.js','utf8');
- source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  window.test={begin,tick,render,special,togglePause,changeWeapon,damagePlayer,spawnPickup,enemyFire,bossDefeated,summonBoss,freshStart,startRPG,startEncounter,startSide,side:()=>side,killed,shoot,hitBullet,spawnEnemy,
+ source=source.replace('  updateButtons();\n  requestAnimationFrame(frame);',`  window.test={begin,tick,render,special,togglePause,changeWeapon,damagePlayer,spawnPickup,enemyFire,bossDefeated,summonBoss,freshStart,startRPG,startEncounter,startSide,startStealth,stealth:()=>stealth,side:()=>side,killed,shoot,hitBullet,spawnEnemy,
   bullets:()=>bullets,enemies:()=>enemies,clearItems:()=>{pickups=[];enemies=[];},
   cheer:()=>({life:cheerLife,clock:cheerClock,index:cheerIndex}),
   set:(v)=>{if('stage'in v)stage=v.stage;if('clock'in v)stageClock=v.clock;if('charge'in v)specials=v.charge;if('hp'in v)player.hp=v.hp;if('invuln'in v)player.invuln=v.invuln;if('bossHP'in v)boss.hp=v.bossHP;},
@@ -100,3 +101,21 @@ for(const [ratio,phase] of [[.9,0],[.5,1],[.2,2]]){fx.set({bossHP:3000*ratio});h
 for(const pattern of ['fan','ring','beam','homing','wave','fast','feint','pincer']){fx.fire(pattern);if(pattern==='beam')assert(hs().beam.time>1);else assert(hs().enemyShots.some(b=>b.motion===pattern));}
 hg.render();fx.set({bossHP:0,invuln:999});hg.frame(.01);assert(h.progress.get().side.transfer);assert.equal(h.progress.get().side.area,2);hg.frame(3.1);fx.set({time:36});hg.frame(.01);assert.equal(hs().boss.max,6000);fx.set({bossHP:0});hg.frame(.01);assert(h.progress.get().side.clear);hg.render();hg.frame(5.1);assert.equal(h.status().scene,'sideWon');assert(h.progress.get().rpg.arrived);
 console.log('PASS: Chapter 3 buffs/caps/expiry/pause, every area death/reload, immediate checkpoints, 2 boss HP/phases, 8 patterns, saved transfer and ramen clear');
+
+// Chapter 4: additive migration, stealth rules and checkpoint contracts.
+const old4={version:1,stage:2,meat:true,power:3,score:9999,rpgUnlocked:true,chapter:'side',rpg:{x:307,y:235,pass:true,lunch:true,helped:true,arrived:true},side:{area:2,power:3,score:14500,transfer:true,clear:true}};
+const z=boot({nanko_progress_v1:JSON.stringify(old4)}),zg=z.game;assert(z.progress.get().stealth.unlocked);zg.startStealth();assert.equal(z.status().scene,'stealth');const zs=()=>z.status().stealth,zf=zg.stealth().fixture;
+zg.stealth().interact();zf.set({player:{x:200,y:500},guard:{x:200,y:400,angle:Math.PI/2,mode:'work',clock:100},invuln:0});assert(zf.visible());zf.ai(.5,false);assert.equal(zs().alert,11.5);
+zg.stealth().toggleSneak();zf.set({alert:0,guard:{angle:Math.PI/2}});zf.ai(.5,false);assert.equal(zs().alert,24);zg.stealth().toggleSneak();
+zf.set({player:{x:120,y:350},guard:{x:200,y:350,angle:Math.PI}});assert(!zf.visible(),'bookshelf must block sight');
+zf.set({player:{x:120,y:370},guard:{x:120,y:310,angle:Math.PI/2}});zg.stealth().hide();assert(zs().hidden);assert(!zf.visible());zg.stealth().hide();assert(!zs().hidden);
+zf.makeNoise({x:65,y:365});assert.equal(zs().guard.mode,'investigate');
+zf.set({player:{x:200,y:500},guard:{x:200,y:400,angle:Math.PI/2,mode:'work',clock:100},alert:99});zf.ai(.1,false);assert.equal(zs().guard.mode,'chase');
+zf.set({hidden:true});for(let i=0;i<80;i++)zf.ai(.1,false);assert.notEqual(zs().guard.mode,'chase');zf.set({hidden:false,player:{x:195,y:580},guard:{x:195,y:580,mode:'chase',last:{x:195,y:580}},invuln:0});zf.ai(.01,false);assert.equal(z.status().scene,'stealthLost');zg.begin();assert.equal(zs().player.x,195);assert.equal(zs().player.y,580);
+zg.stealth().interact();zf.set({dialog:null,player:{x:305,y:215},guard:{x:65,y:365,mode:'work',clock:100}});zg.stealth().interact();assert(zs().drawer);const t=zs().guard.clock;zg.frame(.2);assert(zs().guard.clock<t,'manager keeps moving during search');zg.stealth().search(0);assert(!zs().coupon);zg.stealth().search(5);assert(zs().coupon);assert(z.progress.get().stealth.coupon);
+let zz=boot(z.storage);zz.game.begin();assert.equal(zz.status().scene,'stealth');assert(zz.status().stealth.coupon);
+zf.set({dialog:null,player:{x:195,y:580}});zg.stealth().interact();assert(z.progress.get().stealth.escaped);assert(z.progress.get().stealth.day);zg.frame(3.1);zg.stealth().interact();zf.set({player:{x:310,y:240}});zg.stealth().interact();assert(z.progress.get().stealth.clear);zg.render();zg.frame(6.1);assert.equal(z.status().scene,'stealthWon');
+for(const key of ['stage','meat','power','score','rpgUnlocked','rpg','side'])assert.deepEqual(JSON.parse(JSON.stringify(z.progress.get()[key])),old4[key]);
+zg.begin();assert(z.progress.get().stealth.clear,'replay preserves earned clear flag');assert(!zs().day);zg.togglePause();const gt=zs().guard.clock;zg.frame(10);assert.equal(zs().guard.clock,gt);zg.togglePause();
+const no4=boot();no4.game.startStealth();assert.equal(no4.status().scene,'title');
+console.log('PASS: Chapter 4 unlock/migration, view cone/occlusion, sneak/hide/noise/chase/search, capture/retry, live drawer, coupon/escape/day/meal, reload/pause/replay and old saves');

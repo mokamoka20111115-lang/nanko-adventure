@@ -1,7 +1,7 @@
 /* Versioned, local-only progress. No server or account required. */
 (() => {
   const key='nanko_progress_v1';
-  const fresh=()=>({version:1,stage:0,meat:false,power:1,score:0,rpgUnlocked:false,chapter:'shooting',side:{area:0,power:1,score:0,transfer:false,clear:false},rpg:{x:195,y:550,pass:false,lunch:false,helped:false,arrived:false}});
+  const fresh=()=>({version:1,stage:0,meat:false,power:1,score:0,rpgUnlocked:false,chapter:'shooting',stealth:{unlocked:false,coupon:false,escaped:false,day:false,clear:false,flower:false,x:195,y:580},side:{area:0,power:1,score:0,transfer:false,clear:false},rpg:{x:195,y:550,pass:false,lunch:false,helped:false,arrived:false}});
   let available=true;
   const clean=raw=>{
     const d=fresh();if(!raw||raw.version!==1)return d;
@@ -18,6 +18,14 @@
     d.side.score=Number.isFinite(side.score)?Math.max(0,Math.floor(side.score)):0;
     d.side.transfer=side.transfer===true;d.side.clear=side.clear===true;
     if(d.rpgUnlocked&&d.rpg.arrived&&raw.chapter==='side')d.chapter='side';
+    const t=raw.stealth||{};
+    d.stealth.unlocked=d.side.clear;
+    for(const k of ['coupon','escaped','day','clear','flower'])d.stealth[k]=t[k]===true;
+    // Normalize new fields only; existing chapters are left intact.
+    if(d.stealth.day)d.stealth.escaped=true;
+    if(d.stealth.escaped)d.stealth.coupon=true;
+    for(const k of ['x','y'])if(Number.isFinite(t[k]))d.stealth[k]=Math.max(k==='x'?20:110,Math.min(k==='x'?370:610,t[k]));
+    if(d.side.clear&&raw.chapter==='stealth')d.chapter='stealth';
     return d;
   };
   let data=fresh();try{data=clean(JSON.parse(localStorage.getItem(key)));}catch(_){available=false;}

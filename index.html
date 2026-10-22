@@ -33,12 +33,14 @@
           <div id="screenEyebrow" class="eyebrow">NANKO & CHAKE PRESENT</div>
           <img class="mascot-pair" src="./assets/heroes.png" alt="なんこ と ちゃけ" width="150" height="88">
           <h1 id="screenTitle">なんこの<br>大冒険！</h1>
-          <p id="screenText">おかねで出発！ お肉とレアなお魚を集めよう。<br>出勤RPGの先には、銀行とエビラーメンの横スクロール冒険！</p>
+          <p id="screenText">おかねで出発！ お肉とレアなお魚を集めよう。<br>銀行とエビラーメンの次は、店長に見つからず幻のトンテキへ！</p>
           <button id="mainBtn" class="start-btn">🌸 ぼうけんスタート！</button>
+          <button id="chapter4Btn" class="secondary-btn" hidden>第4章へ進む → 幻のトンテキ割引券！</button>
           <button id="newBtn" class="secondary-btn" hidden>最初から遊ぶ</button>
-          <div id="screenExtra" class="screen-extra">全3章 · シューティングと出勤RPG</div>
+          <div id="screenExtra" class="screen-extra">全4章 · シューティングと出勤RPG</div>
         </div>
       </div>
+      <div id="drawerPanel" class="drawer-panel" hidden role="group" aria-label="引き出しのアイテム探し"><strong>引き出しを調べよう</strong><p id="drawerTime" role="status"></p><div class="drawer-grid"><button id="drawer0">調べる</button><button id="drawer1">調べる</button><button id="drawer2">調べる</button><button id="drawer3">調べる</button><button id="drawer4">調べる</button><button id="drawer5">調べる</button></div><button id="closeDrawer">探索をやめて逃げる</button></div>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>
 
@@ -58,16 +60,19 @@
       <button id="chapter3Btn" class="secondary-btn" hidden>第3章へ進む → 銀行とエビラーメン！</button>
       <p class="move-tip">📱 行きたい場所をタップ ／ 💻 矢印・WASDで移動、Enterで会話</p>
     </section>
-<dialog id="chapterMenu" class="install-help"><h2>章を選ぶ</h2><p>進行や解放状況は消えません。</p><button id="chooseShoot">第1章・つづきから</button><button id="replayShoot">第1章・最初から再プレイ</button><button id="chooseRpg">第2章・街へ戻る</button><button id="chooseSide">第3章へ（出勤後に解放）</button><button id="closeChapters">閉じる</button></dialog>
+<section id="stealthControls" class="controller" hidden><p id="stealthMission" class="mission"></p><div class="stealth-buttons"><button id="stealthTalkBtn">話す・調べる</button><button id="sneakBtn" aria-pressed="true">忍び足 ON</button><button id="hideBtn" aria-pressed="false">隠れる</button></div><p class="move-tip">タップ移動 ／ 矢印・WASD ／ Enter 調べる ／ C 忍び足 ／ H 隠れる</p></section>
+<dialog id="chapterMenu" class="install-help"><h2>章を選ぶ</h2><p>進行や解放状況は消えません。</p><button id="chooseShoot">第1章・つづきから</button><button id="replayShoot">第1章・最初から再プレイ</button><button id="chooseRpg">第2章・街へ戻る</button><button id="chooseSide">第3章へ（出勤後に解放）</button><button id="chooseStealth">第4章へ（第3章クリア後）</button><button id="replayStealth">第4章・潜入から再プレイ</button><button id="closeChapters">閉じる</button></dialog>
     <dialog id="newConfirm" class="install-help"><h2>最初から遊ぶ？</h2><p>章の進行と武器の解放をリセットします。ベストスコアは残ります。</p><button id="cancelNew">戻る</button><button id="confirmNew">最初から始める</button></dialog>
     <p class="install-tip"><span id="offlineStatus" role="status">オフライン準備中…</span> · <button id="installHelpBtn">ホーム画面に追加</button></p>
     <dialog id="installHelp" class="install-help"><h2>なんこをホーム画面に！</h2><p>iPhoneではSafariでこのページを開き、共有ボタン →「ホーム画面に追加」→「追加」を選んでね。</p><p>「オフライン準備OK」と表示されたら、電波がない場所でも遊べます。音声合成の声は端末によって異なり、使えない時も文字と効果音で楽しめます。</p><button id="closeHelp">わかった！</button></dialog>
     <footer>なんこ × ちゃけ VS はしもと <span>♡</span> ぜんぶフィクションのコミカルバトル</footer>
   </main>
-  <script src="./progress.js?v=chapter-3"></script>
-  <script src="./rpg.js?v=chapter-3"></script>
-  <script src="./side.js?v=chapter-3"></script>
-  <script src="./game.js?v=chapter-3"></script>
-  <script src="pwa.js?v=chapter-3"></script>
+  <script src="./progress.js?v=chapter-4"></script>
+  <script src="./rpg-nav.js?v=chapter-4"></script>
+  <script src="./rpg.js?v=chapter-4"></script>
+  <script src="./side.js?v=chapter-4"></script>
+  <script src="./stealth.js?v=chapter-4"></script>
+  <script src="./game.js?v=chapter-4"></script>
+  <script src="pwa.js?v=chapter-4"></script>
 </body>
 </html>

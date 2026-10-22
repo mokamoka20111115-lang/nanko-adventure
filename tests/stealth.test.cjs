@@ -1,0 +1,27 @@
+const {chromium}=require('playwright'),assert=require('assert/strict');
+(async()=>{
+ const browser=await chromium.launch({executablePath:process.env.NANKO_CHROME,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+ const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8000/');await page.locator('#chaptersBtn').click();assert(await page.locator('#chooseStealth').isDisabled());await page.locator('#closeChapters').click();
+ // Fixture only supplies a legitimate old-format completed Chapter 3 save.
+ const legacy={version:1,stage:2,meat:true,power:3,score:9999,rpgUnlocked:true,chapter:'side',rpg:{x:307,y:235,pass:true,lunch:true,helped:true,arrived:true},side:{area:2,power:3,score:14500,transfer:true,clear:true}};
+ await page.evaluate(d=>localStorage.setItem('nanko_progress_v1',JSON.stringify(d)),legacy);await page.reload();await page.locator('#chaptersBtn').click();await page.locator('#chooseStealth').click();assert.equal(await page.evaluate(()=>nankoStatus.scene),'stealth');await page.locator('#stealthTalkBtn').click();await page.clock.install();
+ for(const [width,height]of [[320,568],[375,667],[390,844],[430,932],[1280,900]]){await page.setViewportSize({width,height});await page.clock.runFor(100);const r=await page.locator('#stealthControls').boundingBox();assert(r.x>=0&&r.x+r.width<=width+1&&r.y+r.height<=height);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+ await page.setViewportSize({width:390,height:844});await page.clock.runFor(100);await page.locator('#pauseBtn').click();assert.equal(await page.evaluate(()=>nankoStatus.scene),'stealth');
+ const status=()=>page.evaluate(()=>nankoStatus.stealth);
+ const walk=async(x,y)=>{const r=await page.locator('#game').boundingBox();await page.touchscreen.tap(r.x+x*r.width/390,r.y+y*r.height/660);for(let i=0;i<160;i++){await page.clock.runFor(100);const s=await status();assert(!s.caught,'Caught during walk '+x+','+y+' '+JSON.stringify(s));if(!s.path.length){assert(Math.hypot(s.player.x-x,s.player.y-y)<7,'Did not reach target');console.log('WALK',x,y,'guard',s.guard.mode,Math.round(s.alert));return;}}throw Error('Walk timeout');};
+ await page.screenshot({path:'tests/chapter4-office.png'});
+ await walk(120,550);await page.locator('#hideBtn').click();assert((await status()).hidden);await page.clock.runFor(500);await page.locator('#hideBtn').click();assert(!(await status()).hidden);
+ await walk(65,365);await page.locator('#stealthTalkBtn').click();assert.equal((await status()).guard.mode,'investigate');
+ // Move through the central corridor while the manager investigates the copier.
+ await page.locator('#sneakBtn').click();await walk(210,440);await walk(210,245);await walk(305,215);await page.locator('#sneakBtn').click();
+ await page.locator('#stealthTalkBtn').click();assert(await page.locator('#drawerPanel').isVisible());await page.screenshot({path:'tests/chapter4-drawer.png'});const before=(await status()).drawer.left;await page.clock.runFor(500);assert((await status()).drawer.left<before);
+ await page.locator('#drawer0').click();await page.locator('#drawer5').click();assert((await status()).coupon);await page.locator('#stealthTalkBtn').click();
+ await page.locator('#sneakBtn').click();await walk(340,280);await walk(350,440);await walk(195,580);await page.locator('#stealthTalkBtn').click();assert((await status()).escaped);assert((await status()).day);await page.clock.runFor(3100);await page.locator('#stealthTalkBtn').click();
+ // Reload at the next-day checkpoint; street route and reward are normal UI.
+ await page.reload();await page.locator('#mainBtn').click();await page.clock.install();assert((await status()).day);assert((await status()).coupon);
+ await walk(75,375);await page.locator('#stealthTalkBtn').click();assert((await status()).flower);await page.locator('#stealthTalkBtn').click();await walk(310,240);await page.locator('#stealthTalkBtn').click();await page.clock.runFor(1200);await page.screenshot({path:'tests/chapter4-tonteki.png'});await page.clock.runFor(5100);assert.equal(await page.evaluate(()=>nankoStatus.scene),'stealthWon');
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('nanko_progress_v1')));assert(saved.stealth.clear&&saved.stealth.escaped&&saved.stealth.coupon);for(const k of ['stage','meat','power','score','rpgUnlocked','rpg','side'])assert.deepEqual(saved[k],legacy[k]);
+ await context.setOffline(true);await page.reload();await page.locator('#mainBtn').click();assert.equal(await page.evaluate(()=>nankoStatus.scene),'stealth');assert((await status()).clear);await page.locator('#chaptersBtn').click();await page.locator('#chooseRpg').click();assert.equal(await page.evaluate(()=>nankoStatus.scene),'rpg');
+ assert.deepEqual(errors,[]);console.log('PASS Chapter 4: locked gate, legacy save, mobile layouts/touch, hide/sneak, copier AI, live drawer, coupon, escape, next day, detour, meal/clear, reload, offline, old progress');await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});

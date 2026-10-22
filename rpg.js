@@ -29,19 +29,7 @@ window.createNankoRPG = function(api){
     if(dialog){interact();return;}
     const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)*W/rect.width,y=(e.clientY-rect.top)*H/rect.height;
     if(solid(x,y))return;
-    const cell=(x,y)=>[Math.round((x-20)/20),Math.round((y-100)/20)];
-    const [sx,sy]=cell(state.x,state.y),[gx,gy]=cell(x,y),key=(x,y)=>x+','+y;
-    const queue=[[sx,sy]],from=new Map([[key(sx,sy),null]]);let end=null;
-    for(let i=0;i<queue.length;i++){
-      const [a,b]=queue[i];if(a===gx&&b===gy){end=key(a,b);break;}
-      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
-        const nx=a+dx,ny=b+dy,k=key(nx,ny);if(from.has(k)||solid(20+nx*20,100+ny*20))continue;
-        from.set(k,key(a,b));queue.push([nx,ny]);
-      }
-    }
-    if(!end)return;path=[];
-    while(from.get(end)!==null){const [a,b]=end.split(',').map(Number);path.unshift({x:20+a*20,y:100+b*20});end=from.get(end);}
-    path.push({x,y});
+    path=window.NankoRPGNavigation(state,{x,y},solid);
   }
   function tick(dt,keys){
     time+=dt;saveClock+=dt;cheerLife=Math.max(0,cheerLife-dt);cheerClock-=dt;

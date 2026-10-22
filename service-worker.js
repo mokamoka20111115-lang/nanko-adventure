@@ -1,8 +1,8 @@
 /* Offline cache for static, self-contained Nanko Adventure PWA. */
-const CACHE_NAME = 'nanko-adventure-chapter3-v1';
+const CACHE_NAME = 'nanko-adventure-chapter4-v1';
 const FILES = [
-  './', './index.html', './style.css', './game.js?v=chapter-3', './side.js?v=chapter-3',
-  './progress.js?v=chapter-3', './rpg.js?v=chapter-3', './manifest.webmanifest', './pwa.js?v=chapter-3',
+  './', './index.html', './style.css', './game.js?v=chapter-4', './side.js?v=chapter-4', './stealth.js?v=chapter-4', './rpg-nav.js?v=chapter-4',
+  './progress.js?v=chapter-4', './rpg.js?v=chapter-4', './manifest.webmanifest', './pwa.js?v=chapter-4',
   './assets/heroes.png', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'
 ];
 self.addEventListener('install', event => {
